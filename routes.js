@@ -147,7 +147,7 @@ routes.get('/', (req, res) => {
           </ul>
         </section>
       </main>
-      <footer>Backend ativo na porta 3344. Abra <strong>http://localhost:3344/</strong> para acessar a interface.</footer>
+      <footer>Backend ativo.</footer>
     </body>
     </html>
   `);
