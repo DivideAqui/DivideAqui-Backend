@@ -3,7 +3,9 @@
 </p>
 
 # DivideAqui - Backend
-🔐 Responsável por receber e processar as <b>requisições</b> da aplicação, <b>gerenciar usuários e autenticação</b>, aplicar as regras de negócio do sistema e garantir a <b>persistência e integridade dos dados</b> por meio da integração com o banco de dados.
+>🔐 Responsável por receber e processar as <b>requisições</b> da aplicação, <b>gerenciar usuários e autenticação</b>, aplicar as regras de negócio do sistema e garantir a <b>persistência e integridade dos dados</b> por meio da integração com o banco de dados.
+
+---
 
 ## 🛡️ Funcionalidades do Backend
 <p align="center">
