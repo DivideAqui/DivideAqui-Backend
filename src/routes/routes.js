@@ -18,7 +18,7 @@ routes.get('/', (req, res) => {
       <main class="page">
         <section class="card1">
           <div class="hero">
-            <img class="logo" src="/iconeVerdeClaro.png">
+            <img class="logo" src="/assets/iconeVerdeClaro.png">
             <div>
               <h1 class="title">Documentação do Backend</h1>
               <p class="subtitle">Organização de Rotas, Dados e Lógica do <b>DivideAqui</b>.</p>

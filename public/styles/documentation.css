@@ -22,8 +22,8 @@ body {
   color: var(--branco);
   background: var(--azul-escuro);
   background-image:
-    url("/texturaFundo.png"),
-    url("/texturaBlurAzul.png");
+    url("/assets/texturaFundo.png"),
+    url("/assets/texturaBlurAzul.png");
 }
 
 .page {
