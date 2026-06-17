@@ -1,0 +1,31 @@
+let usuariosenviados = [];
+Faz o papel de "banco de dados" enquanto não tem um real. Fica na memória e se perde ao reiniciar.
+
+Método criar
+jsasync criar(req, res) {
+    const { nome, email, senha } = req.body;
+Recebe os dados enviados pelo formulário via req.body.
+js    if (!nome || !email || !senha) {
+        return res.status(400).json({ erro: 'Campos não informados!' });
+    }
+Valida se todos os campos foram preenchidos. Se não, retorna erro 400.
+js    const novoUsuario = {
+        id: Math.random().toString(36).substr(2, 9),
+        nome,
+        email,
+        senha,
+    };
+    usuariosenviados.push(novoUsuario);
+    return res.status(201).json({ mensagem: "Usuário cadastrado!", usuario: novoUsuario });
+}
+Cria o usuário com um ID aleatório, salva no array e retorna sucesso 201.
+
+Método listar
+jslistar() {
+    return usuariosenviados;
+}
+Simplesmente retorna o array com todos os usuários cadastrados.
+
+Export
+jsexport default new UsuarioControllers();
+Exporta uma instância única da classe para ser usada nas rotas.

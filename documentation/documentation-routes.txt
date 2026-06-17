@@ -1,0 +1,23 @@
+explicação do routes(Cadastrar e Usuários):
+
+document.getElementById('form').addEventListener('submit', async(e) => {
+    e.preventDefault();
+Quando o usuário clica em "Cadastrar", captura o evento e bloqueia o recarregamento da página.
+
+2. Envia os dados para o backend
+jsconst res = await fetch('/UsuarioCadastro', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        nome: document.getElementById('nome').value,
+        email: document.getElementById('email').value,
+        senha: document.getElementById('senha').value,
+    })
+});
+Pega os valores dos inputs e envia via POST para a rota /UsuarioCadastro em formato JSON.
+
+3. Exibe a resposta
+jsconst data = await res.json();
+alert(JSON.stringify(data));
+Converte a resposta do backend e mostra num popup. Exemplo do que aparece:
+json{"mensagem":"Usuário cadastrado!","usuario":{...}}
