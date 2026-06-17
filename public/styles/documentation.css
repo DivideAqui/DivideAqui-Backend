@@ -16,14 +16,18 @@
 body {
   min-height: 100vh;
   margin-top: 2.5rem;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   line-height: 1.6;
   color: var(--branco);
   background: var(--azul-escuro);
   background-image:
-    url("/assets/texturaFundo.png"),
-    url("/assets/texturaBlurAzul.png");
+    url("/assets/texturaFundo.png"), url("/assets/texturaBlurAzul.png");
 }
 
 .page {
@@ -84,11 +88,7 @@ body {
   content: "";
   flex: 1;
   height: 4px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(184,251,60,.5)
-  );
+  background: linear-gradient(to right, transparent, rgba(184, 251, 60, 0.5));
 }
 
 .section-title::after {
@@ -97,37 +97,71 @@ body {
 
 /* Lista */
 
-ul {
-  list-style: none;
+/* Lista */
+
+.routes {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
+  width: 90%;
+  margin: 0 auto;
 }
 
-li {
-  padding: 18px 25px;
+.route-group {
+  padding: 20px 25px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 2px solid rgba(255, 255, 255, 0.25);
   box-shadow:
     0 4px 20px rgba(0, 0, 0, 0.2),
     inset 0 2px 1px rgba(255, 255, 255, 0.45);
-  font-size: clamp(1rem, 1.6vw, 1.4rem);
-  line-height: 1.5;
-  width: 90%;
-  align-self: center;
 }
 
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  display: inline-block;
+  padding: 4px 14px;
   border-radius: 999px;
-  background: var(--verde-escuro);
-  color: var(--preto);
   font-weight: 700;
-  margin-bottom: 20px;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+
+.badge.post {
+  background: #f97316;
+  color: var(--preto);
+}
+
+.badge.get {
+  background: var(--verde-claro);
+  color: var(--preto);
+}
+
+.route-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-item {
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+  line-height: 1.5;
+  transition: background 0.2s;
+}
+
+.route-item:hover {
+  background: rgba(184, 251, 60, 0.08);
+  border-color: rgba(184, 251, 60, 0.3);
+}
+
+@media (max-width: 768px) {
+  .routes {
+    width: 100%;
+  }
 }
 
 footer {

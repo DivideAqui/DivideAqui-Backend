@@ -1,37 +1,70 @@
- <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Divideaqui - Interface do Backend</title>
-      <link rel="stylesheet" href="./styles/documentation.css" />
-    </head>
-    <body>
-      <main class="page">
-        <section class="card1">
-          <div class="hero">
-            <img class="logo" src="/assets/iconeVerdeClaro.png">
-            <div>
-              <h1 class="title">Documentação do Backend</h1>
-              <p class="subtitle">Organização de Rotas, Dados e Lógica do <b>DivideAqui</b>.</p>
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Divideaqui - Interface do Backend</title>
+    <link rel="stylesheet" href="./styles/documentation.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card1">
+        <div class="hero">
+          <img class="logo" src="/assets/iconeVerdeClaro.png" />
+          <div>
+            <h1 class="title">Documentação do Backend</h1>
+            <p class="subtitle">
+              Organização de Rotas, Dados e Lógica do <b>DivideAqui</b>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card2">
+        <p class="text-block">
+          Abaixo estão as Rotas Públicas já configuradas no backend. O conteúdo
+          desta página não inclui APIs fictícias, apenas a documentação das
+          rotas reais.
+        </p>
+        <h2 class="section-title">Rotas Disponíveis</h2>
+        <div class="routes">
+          <div class="route-group">
+            <span class="badge post">POST</span>
+            <div class="route-items">
+              <div class="route-item">
+                <strong>POST /usuariosCad</strong> — Cadastro de usuários.
+              </div>
+              <div class="route-item">
+                <strong>POST /Login</strong> — Login de usuários.
+              </div>
             </div>
           </div>
-        </section>
 
-        <section class="card2">
-          <p class="text-block">Abaixo estão as Rotas Públicas já configuradas no backend. O conteúdo desta página não inclui APIs fictícias, apenas a documentação das rotas reais.</p>
-          <h2 class="section-title">Rotas Disponíveis</h2>
-          <ul>
-            <li><strong>GET /</strong> — Interface de apresentação do backend e documentação básica.</li>
-            <li><strong>POST /usuariosCad</strong> — Cadastro de usuários.</li>
-            <li><strong>GET /usuario/:user_id</strong> — Buscar cadastro de usuários pelo ID expecifico.</li>
-            <li><strong>GET /usuarioid</strong> — Buscar cadastro de usuários pelo ID geral.</li>
-          </ul>
-        </section>
-      </main>
+          <div class="route-group">
+            <span class="badge get">GET</span>
+            <div class="route-items">
+              <div class="route-item">
+                <strong>GET /</strong> — Interface de apresentação do backend e
+                documentação básica.
+              </div>
+              <div class="route-item">
+                <strong>GET /usuario/:user_id</strong> — Buscar cadastro de
+                usuários pelo ID específico.
+              </div>
+              <div class="route-item">
+                <strong>GET /usuarioid</strong> — Buscar cadastro de usuários
+                pelo ID geral.
+              </div>
+              <div class="route-item">
+                <strong>GET /perfil</strong> — Retorna os dados do usuário
+                autenticado (requer token JWT).
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
 
-      <footer>Backend ativo.</footer>
-
-    </body>
-
-    </html>
+    <footer>Backend ativo.</footer>
+  </body>
+</html>
