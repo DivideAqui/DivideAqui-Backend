@@ -3,7 +3,7 @@ const prisma = require("../libs/prisma.js");
 const jwt = require("jsonwebtoken");
 
 async function criarUsuarios(req, res) {
-   try {
+  try {
     const { name, email, cpf, password } = req.body;
     const hashpassword = await bcrypt.hash(password, 10);
 
@@ -31,13 +31,24 @@ async function criarUsuarios(req, res) {
     const novoUsuario = await prisma.usuario.create({ data });
 
     const respostaFormatada = {
-      ...novoUsuario,
       user_id: novoUsuario.user_id.toString(),
+      user_nome: novoUsuario.user_nome,
+      user_email: novoUsuario.user_email,
+      user_cpf: novoUsuario.user_cpf,
     };
 
+    const token = jwt.sign(
+      {
+        id: novoUsuario.user_id.toString(),
+        email: novoUsuario.user_email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" },
+    );
     return res.status(201).json({
       mensagem: "Usuário criado com sucesso!",
       usuario: respostaFormatada,
+      token,
     });
   } catch (error) {
     console.error(error);
@@ -91,39 +102,48 @@ async function procurarClirGeral(req, res) {
     });
   }
 }
-async function loginUsuario (req, res) {
-  const {email, cpf, password} = req.body;
+async function loginUsuario(req, res) {
+  const { email, cpf, password } = req.body;
 
-  if (!password || (!email && !cpf)){
-    return res.status(400).json({ 
-    erro: "Para fazer o login, você deve fornecer a senha e ao menos o e-mail ou o CPF." 
-  });
-  } 
+  if (!password || (!email && !cpf)) {
+    return res.status(400).json({
+      erro: "Para fazer o login, você deve fornecer a senha e ao menos o e-mail ou o CPF.",
+    });
+  }
   const condicoes = [];
   if (email) condicoes.push({ user_email: email });
   if (cpf) condicoes.push({ user_cpf: cpf });
 
-  const userExistente= await prisma.usuario.findFirst({
+  const userExistente = await prisma.usuario.findFirst({
     where: {
-        OR: condicoes
-    }
-  }) 
-  if(!userExistente){
-    return res.status(401).json({erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo."});
+      OR: condicoes,
+    },
+  });
+  if (!userExistente) {
+    return res.status(401).json({
+      erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo.",
+    });
   }
   const senhaValida = await bcrypt.compare(password, userExistente.user_senha);
 
-  if(!senhaValida){
-    return res.status(401).json({erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo."});
+  if (!senhaValida) {
+    return res.status(401).json({
+      erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo.",
+    });
   }
   const token = jwt.sign(
     {
       id: userExistente.user_id.toString(),
-      email: userExistente.user_email
+      email: userExistente.user_email,
     },
-     process.env.JWT_SECRET,
-     {expiresIn: '7d'}
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" },
   );
   return res.status(200).json({ token });
 }
-module.exports = { criarUsuarios, procurarCliepeloid, procurarClirGeral, loginUsuario };
+module.exports = {
+  criarUsuarios,
+  procurarCliepeloid,
+  procurarClirGeral,
+  loginUsuario,
+};
