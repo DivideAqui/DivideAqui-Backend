@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const path = require("path");
 const autenticar = require('../middlewares/autenticar');
 
 const { criarUsuarios, procurarCliepeloid, procurarClirGeral, loginUsuario } = require("../controllers/usuario.controller.js");
