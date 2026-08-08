@@ -11,7 +11,7 @@ router.post("/Login", loginUsuario);
 
 //Get
 router.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "../../public/index.html"));
 });
 router.get("/usuario/:user_id", procurarCliepeloid);
 router.get("/usuarioid", procurarClirGeral);
