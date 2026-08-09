@@ -1,10 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model categoria {
+  cat_id    Int        @id @default(autoincrement())
+  cat_nome  String     @db.VarChar(50)
+  domestico domestico?
+  grupo     grupo[]
+  stream    stream?
+  viagem    viagem?
 }
 
 model usuario {
