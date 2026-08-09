@@ -2,27 +2,38 @@ const bcrypt = require("bcrypt");
 const prisma = require("../libs/prisma.js");
 const jwt = require("jsonwebtoken");
 
+function converterDataBR(dataBR) {
+  if (!dataBR || !dataBR.includes("/")) {
+    throw new Error("Data de nascimento inválida. Use o formato DD/MM/AAAA.");
+  }
+  const [dia, mes, ano] = dataBR.split("/");
+  return new Date(`${ano}-${mes}-${dia}`);
+}
+
 async function criarUsuarios(req, res) {
-   try {
-    const { name, email, cpf, password } = req.body;
+  try {
+    const { name, email, cpf, password, telefone, data_nasc, avali } = req.body;
     const hashpassword = await bcrypt.hash(password, 10);
 
     const data = {
-      user_nome: name,
-      user_email: email,
-      user_senha: hashpassword,
-      user_cpf: cpf,
+      usu_nome: name,
+      usu_email: email,
+      usu_senha: hashpassword,
+      usu_cpf: cpf,
+      usu_telefone: telefone,
+      usu_data_nasc: converterDataBR(data_nasc),
+      usu_avaliacao: avali,
     };
 
     const emailExistente = await prisma.usuario.findUnique({
-      where: { user_email: email },
+      where: { usu_email: email },
     });
 
     if (emailExistente) {
       return res.status(400).send({ erro: "Email já cadastrado!" });
     }
     const cpfExistente = await prisma.usuario.findUnique({
-      where: { user_cpf: cpf },
+      where: { usu_cpf: cpf },
     });
 
     if (cpfExistente) {
@@ -31,13 +42,27 @@ async function criarUsuarios(req, res) {
     const novoUsuario = await prisma.usuario.create({ data });
 
     const respostaFormatada = {
-      ...novoUsuario,
-      user_id: novoUsuario.user_id.toString(),
+      usu_id: novoUsuario.usu_id.toString(),
+      usu_nome: novoUsuario.usu_nome,
+      usu_email: novoUsuario.usu_email,
+      usu_cpf: novoUsuario.usu_cpf,
+      usu_telefone: novoUsuario.usu_telefone,
+      usu_data_nasc: novoUsuario.usu_data_nasc,
+      usu_avaliacao: novoUsuario.usu_avaliacao,
     };
 
+    const token = jwt.sign(
+      {
+        id: novoUsuario.usu_id.toString(),
+        email: novoUsuario.usu_email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" },
+    );
     return res.status(201).json({
       mensagem: "Usuário criado com sucesso!",
       usuario: respostaFormatada,
+      token,
     });
   } catch (error) {
     console.error(error);
@@ -51,7 +76,7 @@ async function procurarCliepeloid(req, res) {
   const { user_id } = req.params;
 
   const result = await prisma.usuario.findUnique({
-    where: { user_id },
+    where: { usu_id: user_id },
   });
   if (result) {
     return res
@@ -72,7 +97,7 @@ async function procurarCliepeloid(req, res) {
 async function procurarClirGeral(req, res) {
   const result = await prisma.usuario.findMany({
     orderBy: {
-      user_id: "asc",
+      usu_id: "asc",
     },
   });
   if (result) {
@@ -91,39 +116,48 @@ async function procurarClirGeral(req, res) {
     });
   }
 }
-async function loginUsuario (req, res) {
-  const {email, cpf, password} = req.body;
+async function loginUsuario(req, res) {
+  const { email, cpf, password } = req.body;
 
-  if (!password || (!email && !cpf)){
-    return res.status(400).json({ 
-    erro: "Para fazer o login, você deve fornecer a senha e ao menos o e-mail ou o CPF." 
-  });
-  } 
-  const condicoes = [];
-  if (email) condicoes.push({ user_email: email });
-  if (cpf) condicoes.push({ user_cpf: cpf });
-
-  const userExistente= await prisma.usuario.findFirst({
-    where: {
-        OR: condicoes
-    }
-  }) 
-  if(!userExistente){
-    return res.status(401).json({erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo."});
+  if (!password || (!email && !cpf)) {
+    return res.status(400).json({
+      erro: "Para fazer o login, você deve fornecer a senha e ao menos o e-mail ou o CPF.",
+    });
   }
-  const senhaValida = await bcrypt.compare(password, userExistente.user_senha);
+  const condicoes = [];
+  if (email) condicoes.push({ usu_email: email });
+  if (cpf) condicoes.push({ usu_cpf: cpf });
 
-  if(!senhaValida){
-    return res.status(401).json({erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo."});
+  const userExistente = await prisma.usuario.findFirst({
+    where: {
+      OR: condicoes,
+    },
+  });
+  if (!userExistente) {
+    return res.status(401).json({
+      erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo.",
+    });
+  }
+  const senhaValida = await bcrypt.compare(password, userExistente.usu_senha);
+
+  if (!senhaValida) {
+    return res.status(401).json({
+      erro: "Não conseguimos encontrar sua conta com esses dados. Verifique as informações e tente de novo.",
+    });
   }
   const token = jwt.sign(
     {
-      id: userExistente.user_id.toString(),
-      email: userExistente.user_email
+      id: userExistente.usu_id.toString(),
+      email: userExistente.usu_email,
     },
-     process.env.JWT_SECRET,
-     {expiresIn: '7d'}
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" },
   );
   return res.status(200).json({ token });
 }
-module.exports = { criarUsuarios, procurarCliepeloid, procurarClirGeral, loginUsuario };
+module.exports = {
+  criarUsuarios,
+  procurarCliepeloid,
+  procurarClirGeral,
+  loginUsuario,
+};
