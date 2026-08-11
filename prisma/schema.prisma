@@ -7,15 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model categoria {
-  cat_id    Int        @id @default(autoincrement())
-  cat_nome  String     @db.VarChar(50)
-  domestico domestico?
-  grupo     grupo[]
-  stream    stream?
-  viagem    viagem?
-}
-
 model usuario {
   usu_id    Int  @id @default(autoincrement())
   usu_nome  String  @db.VarChar(40)
