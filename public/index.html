@@ -61,6 +61,43 @@
               </div>
             </div>
           </div>
+
+          <h3 class="section-subtitle">Rotas de Grupo</h3>
+          <div class="route-group">
+            <span class="badge post">POST</span>
+            <div class="route-items">
+              <div class="route-item">
+                <strong>POST /grupos</strong> — Criar novo grupo.
+                <div class="muted">Exemplo body JSON: { "gru_num_part": 3, "lid_id": 1, "cat_id": 2 }</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="route-group">
+            <span class="badge get">GET</span>
+            <div class="route-items">
+              <div class="route-item"><strong>GET /grupos</strong> — Lista todos os grupos.</div>
+              <div class="route-item"><strong>GET /grupos/:id</strong> — Busca grupo por ID.</div>
+              <div class="route-item"><strong>GET /grupos/busca/categoria?nome=...</strong> — Busca grupos pela categoria (LIKE).</div>
+              <div class="route-item"><strong>GET /grupos/busca/lider?nome=...</strong> — Busca grupos pelo nome do criador (LIKE).</div>
+              <div class="route-item"><strong>GET /grupos/busca/nome?nome=...</strong> — Busca geral por nome (procura em categoria e criador, usa LIKE).</div>
+              <div class="route-item"><strong>GET /grupos/busca/quantidade/:num</strong> — Busca grupos por quantidade de participantes (igual).</div>
+            </div>
+          </div>
+
+          <div class="route-group">
+            <span class="badge put">PUT</span>
+            <div class="route-items">
+              <div class="route-item"><strong>PUT /grupos/:id</strong> — Atualiza um grupo (envie apenas os campos a alterar).</div>
+            </div>
+          </div>
+
+          <div class="route-group">
+            <span class="badge delete">DELETE</span>
+            <div class="route-items">
+              <div class="route-item"><strong>DELETE /grupos/:id</strong> — Remove um grupo.</div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
