@@ -10,21 +10,22 @@ function formatResult(result) {
 
 async function criarGrupo(req, res) {
   try {
-    const { gru_num_part, lid_id, cat_id } = req.body;
-    if (!gru_num_part || !lid_id || !cat_id) {
+    const campos = ["gru_num_part", "cat_id", "gru_nome", "gru_descricao", "gru_visibilidade", "gru_cor", "gru_icone", "men_id", "gru_num_vagas"];
+    const dados = Object.fromEntries(campos.filter((campo) => req.body[campo] !== undefined).map((campo) => [campo, req.body[campo]]));
+    if (dados.gru_num_part === undefined || dados.cat_id === undefined) {
       return res.status(400).json({ erro: "Parâmetros obrigatórios ausentes." });
     }
 
-    const liderExistente = await prisma.lider.findUnique({ where: { lid_id } });
-    if (!liderExistente) {
-      return res.status(400).json({ erro: "Líder não encontrado." });
-    }
-    const categoriaExistente = await prisma.categoria.findUnique({ where: { cat_id } });
+    const categoriaExistente = await prisma.categoria.findUnique({ where: { cat_id: dados.cat_id } });
     if (!categoriaExistente) {
       return res.status(400).json({ erro: "Categoria não encontrada." });
     }
+    if (dados.men_id !== undefined) {
+      const mensalidadeExistente = await prisma.mensalidade.findUnique({ where: { men_id: dados.men_id } });
+      if (!mensalidadeExistente) return res.status(400).json({ erro: "Mensalidade não encontrada." });
+    }
 
-    const novo = await prisma.grupo.create({ data: { gru_num_part, lid_id, cat_id } });
+    const novo = await prisma.grupo.create({ data: dados });
     return res.status(201).json(formatResult(novo));
   } catch (error) {
     console.error(error);
@@ -36,9 +37,10 @@ async function listarGrupos(req, res) {
   try {
     const grupos = await prisma.grupo.findMany({
       include: {
-        lider: { include: { usuario: true } },
         categoria: true,
-        _count: { select: { participantes: true } },
+        mensalidade: true,
+        participacoes: { include: { usuario: true } },
+        _count: { select: { participacoes: true } },
       },
       orderBy: { gru_id: "asc" },
     });
@@ -54,7 +56,7 @@ async function buscarPorId(req, res) {
     const { id } = req.params;
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
-      include: { lider: { include: { usuario: true } }, categoria: true, participantes: true, _count: { select: { participantes: true } } },
+      include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
     if (!grupo) return res.status(404).json({ erro: "Grupo não encontrado." });
     return res.status(200).json(formatResult(grupo));
@@ -70,22 +72,7 @@ async function buscarPorCategoriaNome(req, res) {
     if (!nome) return res.status(400).json({ erro: "Parametro 'nome' é obrigatório." });
     const grupos = await prisma.grupo.findMany({
       where: { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
-      include: { lider: { include: { usuario: true } }, categoria: true, _count: { select: { participantes: true } } },
-    });
-    return res.status(200).json(formatResult(grupos));
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
-  }
-}
-
-async function buscarPorLiderNome(req, res) {
-  try {
-    const { nome } = req.query;
-    if (!nome) return res.status(400).json({ erro: "Parametro 'nome' é obrigatório." });
-    const grupos = await prisma.grupo.findMany({
-      where: { lider: { usuario: { usu_nome: { contains: nome, mode: "insensitive" } } } },
-      include: { lider: { include: { usuario: true } }, categoria: true, _count: { select: { participantes: true } } },
+      include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(grupos));
   } catch (error) {
@@ -101,7 +88,7 @@ async function buscarPorQuantidade(req, res) {
     if (Number.isNaN(parsed)) return res.status(400).json({ erro: "Número inválido." });
     const grupos = await prisma.grupo.findMany({
       where: { gru_num_part: parsed },
-      include: { lider: { include: { usuario: true } }, categoria: true, _count: { select: { participantes: true } } },
+      include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(grupos));
   } catch (error) {
@@ -118,10 +105,9 @@ async function procurarPorNomeGeral(req, res) {
       where: {
         OR: [
           { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
-          { lider: { usuario: { usu_nome: { contains: nome, mode: "insensitive" } } } },
         ],
       },
-      include: { lider: { include: { usuario: true } }, categoria: true, _count: { select: { participantes: true } } },
+      include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(grupos));
   } catch (error) {
@@ -133,14 +119,15 @@ async function procurarPorNomeGeral(req, res) {
 async function atualizarGrupo(req, res) {
   try {
     const { id } = req.params;
-    const dados = req.body;
-    if (dados.lid_id) {
-      const lid = await prisma.lider.findUnique({ where: { lid_id: dados.lid_id } });
-      if (!lid) return res.status(400).json({ erro: "Líder informado não existe." });
-    }
+    const campos = ["gru_num_part", "cat_id", "gru_nome", "gru_descricao", "gru_visibilidade", "gru_cor", "gru_icone", "men_id", "gru_num_vagas"];
+    const dados = Object.fromEntries(campos.filter((campo) => req.body[campo] !== undefined).map((campo) => [campo, req.body[campo]]));
     if (dados.cat_id) {
       const cat = await prisma.categoria.findUnique({ where: { cat_id: dados.cat_id } });
       if (!cat) return res.status(400).json({ erro: "Categoria informada não existe." });
+    }
+    if (dados.men_id) {
+      const mensalidade = await prisma.mensalidade.findUnique({ where: { men_id: dados.men_id } });
+      if (!mensalidade) return res.status(400).json({ erro: "Mensalidade informada não existe." });
     }
     const atualizado = await prisma.grupo.update({ where: { gru_id: parseInt(id) }, data: dados });
     return res.status(200).json(formatResult(atualizado));
@@ -166,7 +153,6 @@ module.exports = {
   listarGrupos,
   buscarPorId,
   buscarPorCategoriaNome,
-  buscarPorLiderNome,
   buscarPorQuantidade,
   procurarPorNomeGeral,
   atualizarGrupo,

@@ -16,10 +16,10 @@ model usuario {
   usu_telefone String? @db.VarChar(15)
   usu_data_nasc DateTime @db.Date
   usu_avaliacao String? @db.VarChar(500)
+  usu_descricao String? @db.VarChar(120)
 
-  liders        lider[]
   mensalidades  mensalidade[]
-  participantes participante[]
+  participacoes participar[]
 
   @@map("usuario")
 }
@@ -27,6 +27,7 @@ model usuario {
 model mensalidade {
   men_id          Int @id @default(autoincrement())
   men_status_pag  String @db.VarChar(20) 
+  men_divisao     tipo_divisao @default(Igualitaria)
   men_data_lan    DateTime @db.Date
   men_valor_pago  Decimal @db.Decimal(10, 2)
   men_data_ven    DateTime @db.Date
@@ -35,43 +36,39 @@ model mensalidade {
 
   usu_id Int
   usuario usuario @relation(fields: [usu_id], references: [usu_id])
+  grupos grupo[]
 
   @@map("mensalidade")
 }
 
-model lider {
-  lid_id  Int @id @default(autoincrement())
-
-  usu_id  Int
-  usuario usuario @relation(fields: [usu_id], references: [usu_id]) 
-
-  grupos grupo[]
-
-  @@map("lider")
-}
-
 model grupo{
-  gru_id       Int @id @default(autoincrement())
-  gru_num_part Int 
+  gru_id          Int @id @default(autoincrement())
+  gru_num_part    Int
+  cat_id          Int
+  gru_nome        String? @db.VarChar(20)
+  gru_descricao   String? @db.VarChar(150)
+  gru_visibilidade Boolean? @default(false)
+  gru_cor         String? @db.VarChar(7)
+  gru_icone       String? @db.VarChar(50)
+  men_id          Int?
+  gru_num_vagas   Int?
 
-  lid_id       Int
-  cat_id       Int
-  lider lider         @relation(fields: [lid_id], references: [lid_id])
   categoria categoria @relation(fields: [cat_id], references: [cat_id])
-  
-  participantes participante[]
-  
+  mensalidade mensalidade? @relation(fields: [men_id], references: [men_id])
+  participacoes participar[]
+
   @@map("grupo")
 }
 
-model participante {
-  usu_id   Int
-  gru_id   Int
-  usuario usuario @relation(fields: [usu_id], references: [usu_id]) 
-  grupo grupo     @relation(fields: [gru_id], references:[gru_id])
-  
-  @@id([usu_id, gru_id])
-  @@map("participante")
+model participar {
+  par_id Int @id @default(autoincrement())
+  usu_id Int
+  gru_id Int
+
+  usuario usuario @relation(fields: [usu_id], references: [usu_id])
+  grupo grupo @relation(fields: [gru_id], references: [gru_id])
+
+  @@map("participar")
 }
 
 model categoria {
@@ -107,12 +104,19 @@ model viagem {
 }
 
 model domestico {
- cat_id       Int @id
- dom_aluguel  Decimal @db.Decimal(10,2)
- dom_Luz      Decimal @db.Decimal(10,2)
- dom_agua     Decimal @db.Decimal(10,2)
- dom_internet Decimal @db.Decimal(10,2)
+  cat_id        Int @id
+  dom_aluguel   Decimal @db.Decimal(10,2)
+  dom_Luz       Decimal @map("dom_luz") @db.Decimal(10,2)
+  dom_agua      Decimal @db.Decimal(10,2)
+  dom_internet  Decimal @db.Decimal(10,2)
+  dom_endereco  String? @db.VarChar(150)
 
  categoria categoria @relation(fields: [cat_id], references: [cat_id])
  @@map("domestico")
+}
+
+enum tipo_divisao {
+  Igualitaria @map("Igualitária")
+  Personalizada @map("Personalizada")
+  @@map("tipo_divisao")
 }
