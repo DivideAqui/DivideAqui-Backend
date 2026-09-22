@@ -36,7 +36,7 @@ async function criarGrupo(req, res) {
           throw erro;
         }
         await tx.stream.create({
-          data: { cat_id: grupo.cat_id, str_valor: Number(detalhes.str_valor) },
+          data: { cat_id: grupo.cat_id, gru_id: grupo.gru_id, str_valor: Number(detalhes.str_valor) },
         });
       }
 
@@ -50,6 +50,7 @@ async function criarGrupo(req, res) {
         await tx.domestico.create({
           data: {
             cat_id: grupo.cat_id,
+            gru_id: grupo.gru_id,
             dom_aluguel: Number(detalhes.dom_aluguel),
             dom_Luz: Number(detalhes.dom_luz),
             dom_agua: Number(detalhes.dom_agua),
@@ -69,6 +70,7 @@ async function criarGrupo(req, res) {
         await tx.viagem.create({
           data: {
             cat_id: grupo.cat_id,
+            gru_id: grupo.gru_id,
             via_partida: detalhes.via_partida,
             via_destino: detalhes.via_destino,
             via_data_inicio: new Date(detalhes.via_data_inicio),
@@ -91,7 +93,10 @@ async function listarGrupos(req, res) {
     const grupos = await prisma.grupo.findMany({
       include: {
         mensalidade: true,
-        categoria: { include: { streams: true, viagens: true, domesticos: true } },
+        categoria: true,
+        stream: true,
+        viagem: true,
+        domestico: true,
         participacoes: { include: { usuario: true } },
         _count: { select: { participacoes: true } },
       },
@@ -109,7 +114,7 @@ async function buscarPorId(req, res) {
     const { id } = req.params;
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
-      include: { categoria: { include: { streams: true, viagens: true, domesticos: true } }, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, stream: true, viagem: true, domestico: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
     if (!grupo) return res.status(404).json({ erro: "Grupo não encontrado." });
     return res.status(200).json(formatResult(grupo));
