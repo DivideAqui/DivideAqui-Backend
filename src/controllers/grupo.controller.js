@@ -25,11 +25,64 @@ async function criarGrupo(req, res) {
       if (!mensalidadeExistente) return res.status(400).json({ erro: "Mensalidade não encontrada." });
     }
 
-    const novo = await prisma.grupo.create({ data: dados });
+    const detalhes = req.body.detalhes ?? {};
+    const novo = await prisma.$transaction(async (tx) => {
+      const grupo = await tx.grupo.create({ data: dados });
+
+      if (dados.cat_id === 1) {
+        if (detalhes.str_valor === undefined || Number.isNaN(Number(detalhes.str_valor))) {
+          const erro = new Error("O valor do streaming é obrigatório.");
+          erro.statusCode = 400;
+          throw erro;
+        }
+        await tx.stream.create({
+          data: { cat_id: grupo.cat_id, str_valor: Number(detalhes.str_valor) },
+        });
+      }
+
+      if (dados.cat_id === 2) {
+        const camposDomesticos = ["dom_aluguel", "dom_luz", "dom_agua", "dom_internet"];
+        if (camposDomesticos.some((campo) => detalhes[campo] === undefined || Number.isNaN(Number(detalhes[campo])))) {
+          const erro = new Error("Os valores domésticos são obrigatórios.");
+          erro.statusCode = 400;
+          throw erro;
+        }
+        await tx.domestico.create({
+          data: {
+            cat_id: grupo.cat_id,
+            dom_aluguel: Number(detalhes.dom_aluguel),
+            dom_Luz: Number(detalhes.dom_luz),
+            dom_agua: Number(detalhes.dom_agua),
+            dom_internet: Number(detalhes.dom_internet),
+            dom_endereco: detalhes.dom_endereco || null,
+          },
+        });
+      }
+
+      if (dados.cat_id === 3) {
+        const camposViagem = ["via_partida", "via_destino", "via_data_inicio", "via_data_fim"];
+        if (camposViagem.some((campo) => !detalhes[campo])) {
+          const erro = new Error("Os dados da viagem são obrigatórios.");
+          erro.statusCode = 400;
+          throw erro;
+        }
+        await tx.viagem.create({
+          data: {
+            cat_id: grupo.cat_id,
+            via_partida: detalhes.via_partida,
+            via_destino: detalhes.via_destino,
+            via_data_inicio: new Date(detalhes.via_data_inicio),
+            via_data_fim: new Date(detalhes.via_data_fim),
+          },
+        });
+      }
+
+      return grupo;
+    });
     return res.status(201).json(formatResult(novo));
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
+    return res.status(error.statusCode || 500).json({ erro: error.statusCode ? error.message : "Erro interno.", detalhes: error.message });
   }
 }
 
