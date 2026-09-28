@@ -1,4 +1,5 @@
 const prisma = require("../libs/prisma.js");
+const { Prisma } = require("@prisma/client");
 
 function formatResult(result) {
   return JSON.parse(
@@ -6,6 +7,24 @@ function formatResult(result) {
       typeof value === "bigint" ? value.toString() : value,
     ),
   );
+}
+
+async function anexarDetalhesLegados(grupos, cliente = prisma) {
+  if (grupos.length === 0) return grupos;
+
+  const ids = grupos.map((grupo) => grupo.gru_id);
+  const [viagens, domesticos] = await Promise.all([
+    cliente.$queryRaw`SELECT "gru_id", "via_partida", "via_destino", "via_data_inicio", "via_data_fim" FROM "viagem" WHERE "gru_id" IN (${Prisma.join(ids)})`,
+    cliente.$queryRaw`SELECT "gru_id", "dom_endereco", "dom_aluguel", "dom_luz", "dom_agua", "dom_internet" FROM "domestico" WHERE "gru_id" IN (${Prisma.join(ids)})`,
+  ]);
+  const viagensPorGrupo = new Map(viagens.map((viagem) => [viagem.gru_id, viagem]));
+  const domesticosPorGrupo = new Map(domesticos.map((domestico) => [domestico.gru_id, domestico]));
+
+  return grupos.map((grupo) => ({
+    ...grupo,
+    viagem: viagensPorGrupo.get(grupo.gru_id) ?? null,
+    domestico: domesticosPorGrupo.get(grupo.gru_id) ?? null,
+  }));
 }
 
 async function criarGrupo(req, res) {
@@ -51,17 +70,7 @@ async function criarGrupo(req, res) {
           erro.statusCode = 400;
           throw erro;
         }
-        await tx.domestico.create({
-          data: {
-            cat_id: grupo.cat_id,
-            gru_id: grupo.gru_id,
-            dom_aluguel: Number(detalhes.dom_aluguel),
-            dom_Luz: Number(detalhes.dom_luz),
-            dom_agua: Number(detalhes.dom_agua),
-            dom_internet: Number(detalhes.dom_internet),
-            dom_endereco: detalhes.dom_endereco || null,
-          },
-        });
+        await tx.$executeRaw`INSERT INTO "domestico" ("cat_id", "gru_id", "dom_aluguel", "dom_luz", "dom_agua", "dom_internet", "dom_endereco") VALUES (${grupo.cat_id}, ${grupo.gru_id}, ${Number(detalhes.dom_aluguel)}, ${Number(detalhes.dom_luz)}, ${Number(detalhes.dom_agua)}, ${Number(detalhes.dom_internet)}, ${detalhes.dom_endereco || null})`;
       }
 
       if (dados.cat_id === 3) {
@@ -71,16 +80,7 @@ async function criarGrupo(req, res) {
           erro.statusCode = 400;
           throw erro;
         }
-        await tx.viagem.create({
-          data: {
-            cat_id: grupo.cat_id,
-            gru_id: grupo.gru_id,
-            via_partida: detalhes.via_partida,
-            via_destino: detalhes.via_destino,
-            via_data_inicio: new Date(detalhes.via_data_inicio),
-            via_data_fim: new Date(detalhes.via_data_fim),
-          },
-        });
+        await tx.$executeRaw`INSERT INTO "viagem" ("cat_id", "gru_id", "via_partida", "via_destino", "via_data_inicio", "via_data_fim") VALUES (${grupo.cat_id}, ${grupo.gru_id}, ${detalhes.via_partida}, ${detalhes.via_destino}, ${detalhes.via_data_inicio}::date, ${detalhes.via_data_fim}::date)`;
       }
 
       return grupo;
@@ -99,14 +99,12 @@ async function listarGrupos(req, res) {
         mensalidade: true,
         categoria: true,
         stream: true,
-        viagem: true,
-        domestico: true,
         participacoes: { include: { usuario: true } },
         _count: { select: { participacoes: true } },
       },
       orderBy: { gru_id: "asc" },
     });
-    return res.status(200).json(formatResult(grupos));
+    return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
@@ -118,10 +116,10 @@ async function buscarPorId(req, res) {
     const { id } = req.params;
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
-      include: { categoria: true, mensalidade: true, stream: true, viagem: true, domestico: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, stream: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
     if (!grupo) return res.status(404).json({ erro: "Grupo não encontrado." });
-    return res.status(200).json(formatResult(grupo));
+    return res.status(200).json(formatResult((await anexarDetalhesLegados([grupo]))[0]));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
@@ -136,7 +134,7 @@ async function buscarPorCategoriaNome(req, res) {
       where: { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
       include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
-    return res.status(200).json(formatResult(grupos));
+    return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
@@ -152,7 +150,7 @@ async function buscarPorQuantidade(req, res) {
       where: { gru_num_part: parsed },
       include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
-    return res.status(200).json(formatResult(grupos));
+    return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
@@ -171,7 +169,7 @@ async function procurarPorNomeGeral(req, res) {
       },
       include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
     });
-    return res.status(200).json(formatResult(grupos));
+    return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
