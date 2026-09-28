@@ -36,7 +36,11 @@ async function criarGrupo(req, res) {
           throw erro;
         }
         await tx.stream.create({
-          data: { cat_id: grupo.cat_id, gru_id: grupo.gru_id, str_valor: Number(detalhes.str_valor) },
+          data: {
+            cat_id: grupo.cat_id,
+            gru_id: grupo.gru_id,
+            str_valor: Number(detalhes.str_valor),
+          },
         });
       }
 

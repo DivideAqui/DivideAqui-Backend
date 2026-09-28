@@ -12,7 +12,7 @@ function converterDataBR(dataBR) {
 
 async function criarUsuarios(req, res) {
   try {
-    const { name, email, cpf, password, telefone, data_nasc, avali } = req.body;
+    const { name, email, cpf, password, telefone, data_nasc } = req.body;
     const hashpassword = await bcrypt.hash(password, 10);
 
     const data = {
@@ -22,7 +22,6 @@ async function criarUsuarios(req, res) {
       usu_cpf: cpf,
       usu_telefone: telefone,
       usu_data_nasc: converterDataBR(data_nasc),
-      usu_avaliacao: avali,
     };
 
     const emailExistente = await prisma.usuario.findUnique({
@@ -48,7 +47,6 @@ async function criarUsuarios(req, res) {
       usu_cpf: novoUsuario.usu_cpf,
       usu_telefone: novoUsuario.usu_telefone,
       usu_data_nasc: novoUsuario.usu_data_nasc,
-      usu_avaliacao: novoUsuario.usu_avaliacao,
     };
 
     const token = jwt.sign(
@@ -75,15 +73,29 @@ async function criarUsuarios(req, res) {
 async function procurarCliepeloid(req, res) {
   const { user_id } = req.params;
 
-  const result = await prisma.usuario.findUnique({
-    where: { usu_id: user_id },
-  });
+  const id = Number(user_id);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ erro: "ID de usuário inválido." });
+  }
+
+  const result = await prisma.usuario.findUnique({ where: { usu_id: id } });
   if (result) {
+    const [avaliacao] = await prisma.avaliacao.groupBy({
+      by: ["ava_avaliado"],
+      where: { ava_avaliado: id },
+      _avg: { ava_nota: true },
+      _count: { ava_id: true },
+    });
     return res
       .status(200)
       .json(
         JSON.parse(
-          JSON.stringify(result, (key, value) =>
+          JSON.stringify({
+            ...result,
+            ava_media: avaliacao?._avg.ava_nota ?? null,
+            ava_quantidade: avaliacao?._count.ava_id ?? 0,
+            ava_mensagem: avaliacao ? null : "Sem avaliações",
+          }, (key, value) =>
             typeof value === "bigint" ? value.toString() : value,
           ),
         ),
@@ -95,10 +107,23 @@ async function procurarCliepeloid(req, res) {
   }
 }
 async function procurarClirGeral(req, res) {
-  const result = await prisma.usuario.findMany({
-    orderBy: {
-      usu_id: "asc",
-    },
+  const [usuarios, avaliacoes] = await Promise.all([
+    prisma.usuario.findMany({ orderBy: { usu_id: "asc" } }),
+    prisma.avaliacao.groupBy({
+      by: ["ava_avaliado"],
+      _avg: { ava_nota: true },
+      _count: { ava_id: true },
+    }),
+  ]);
+  const porUsuario = new Map(avaliacoes.map((avaliacao) => [avaliacao.ava_avaliado, avaliacao]));
+  const result = usuarios.map((usuario) => {
+    const avaliacao = porUsuario.get(usuario.usu_id);
+    return {
+      ...usuario,
+      ava_media: avaliacao?._avg.ava_nota ?? null,
+      ava_quantidade: avaliacao?._count.ava_id ?? 0,
+      ava_mensagem: avaliacao ? null : "Sem avaliações",
+    };
   });
   if (result) {
     return res
