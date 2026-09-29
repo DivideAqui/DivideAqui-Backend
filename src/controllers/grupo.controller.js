@@ -45,8 +45,34 @@ async function criarGrupo(req, res) {
     }
 
     const detalhes = req.body.detalhes ?? {};
+    const creatorId = req.body.gru_criador_id === undefined ? null : Number(req.body.gru_criador_id);
+    const creatorName = typeof req.body.gru_criador_nome === "string"
+      ? req.body.gru_criador_nome.trim().slice(0, 50)
+      : "";
+    if (creatorId !== null && (!Number.isInteger(creatorId) || creatorId < 1)) {
+      return res.status(400).json({ erro: "ID do criador inválido." });
+    }
+    if (creatorId !== null) {
+      const creatorExists = await prisma.usuario.findUnique({ where: { usu_id: creatorId }, select: { usu_id: true } });
+      if (!creatorExists) return res.status(400).json({ erro: "Usuário criador não encontrado." });
+    }
+    dados.gru_criador_id = creatorId;
+    dados.gru_criador_nome = creatorName || null;
+    dados.gru_num_vagas = Math.max(0, Number(dados.gru_num_part) - 1);
+
+    if (dados.cat_id === 1 && detalhes.str_telas !== null && detalhes.str_telas !== undefined) {
+      const limiteTelas = Number(detalhes.str_telas);
+      if (!Number.isInteger(limiteTelas) || limiteTelas < 1 || Number(dados.gru_num_part) > limiteTelas) {
+        return res.status(400).json({ erro: "O número de participantes excede o limite de telas do plano." });
+      }
+    }
+
     const novo = await prisma.$transaction(async (tx) => {
       const grupo = await tx.grupo.create({ data: dados });
+
+      if (creatorId !== null) {
+        await tx.participar.create({ data: { usu_id: creatorId, gru_id: grupo.gru_id } });
+      }
 
       if (dados.cat_id === 1) {
         if (detalhes.str_valor === undefined || Number.isNaN(Number(detalhes.str_valor))) {
@@ -58,6 +84,8 @@ async function criarGrupo(req, res) {
           data: {
             cat_id: grupo.cat_id,
             gru_id: grupo.gru_id,
+            str_plano: typeof detalhes.str_plano === "string" ? detalhes.str_plano.slice(0, 100) : null,
+            str_telas: detalhes.str_telas == null ? null : Number(detalhes.str_telas),
             str_valor: Number(detalhes.str_valor),
           },
         });
@@ -99,6 +127,7 @@ async function listarGrupos(req, res) {
         mensalidade: true,
         categoria: true,
         stream: true,
+        criador: { select: { usu_id: true, usu_nome: true } },
         _count: { select: { participacoes: true } },
       },
       orderBy: { gru_id: "asc" },
@@ -115,7 +144,7 @@ async function buscarPorId(req, res) {
     const { id } = req.params;
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
-      include: { categoria: true, mensalidade: true, stream: true, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, stream: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
     });
     if (!grupo) return res.status(404).json({ erro: "Grupo não encontrado." });
     return res.status(200).json(formatResult((await anexarDetalhesLegados([grupo]))[0]));
@@ -131,7 +160,7 @@ async function buscarPorCategoriaNome(req, res) {
     if (!nome) return res.status(400).json({ erro: "Parametro 'nome' é obrigatório." });
     const grupos = await prisma.grupo.findMany({
       where: { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
-      include: { categoria: true, mensalidade: true, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -147,7 +176,7 @@ async function buscarPorQuantidade(req, res) {
     if (Number.isNaN(parsed)) return res.status(400).json({ erro: "Número inválido." });
     const grupos = await prisma.grupo.findMany({
       where: { gru_num_part: parsed },
-      include: { categoria: true, mensalidade: true, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -166,7 +195,7 @@ async function procurarPorNomeGeral(req, res) {
           { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
         ],
       },
-      include: { categoria: true, mensalidade: true, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {

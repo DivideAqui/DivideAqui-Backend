@@ -22,6 +22,7 @@ model usuario {
   mensalidades                               mensalidade[]
   notificacao                                notificacao[]
   participacoes                              participar[]
+  gruposCriados                              grupo[]        @relation("grupo_criador")
 
   @@map("usuario")
 }
@@ -53,12 +54,15 @@ model grupo {
   gru_icone        String?      @db.VarChar(50)
   men_id           Int?
   gru_num_vagas    Int?
+    gru_criador_id   Int?
+    gru_criador_nome String?      @db.VarChar(50)
   avaliacao        avaliacao[]
   domestico        domestico?   @ignore
   mensalidade      mensalidade? @relation(fields: [men_id], references: [men_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupo_mensalidade")
   categoria        categoria    @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)
   item             item[]
   participacoes    participar[]
+  criador          usuario?     @relation("grupo_criador", fields: [gru_criador_id], references: [usu_id], onDelete: SetNull, onUpdate: Cascade, map: "fk_grupo_criador")
   stream           stream?
   viagem           viagem?      @ignore
 
@@ -90,6 +94,8 @@ model categoria {
 model stream {
   cat_id    Int?
   gru_id    Int        @unique
+  str_plano String?    @db.VarChar(100)
+  str_telas Int?
   str_valor Decimal    @db.Decimal(10, 2)
   categoria categoria? @relation(fields: [cat_id], references: [cat_id])
   grupo     grupo      @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
