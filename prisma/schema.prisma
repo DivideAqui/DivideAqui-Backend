@@ -123,10 +123,6 @@ model domestico {
   cat_id       Int
   dom_endereco String?   @db.VarChar(150)
   gru_id       Int?      @unique
-  dom_aluguel  Decimal   @default(0) @db.Decimal(10, 2)
-  dom_Luz      Decimal   @default(0) @map("dom_luz") @db.Decimal(10, 2)
-  dom_agua     Decimal   @default(0) @db.Decimal(10, 2)
-  dom_internet Decimal   @default(0) @db.Decimal(10, 2)
   categoria    categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)
   grupo        grupo?    @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
 
