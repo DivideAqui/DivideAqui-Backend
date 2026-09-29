@@ -13,17 +13,12 @@ async function anexarDetalhesLegados(grupos, cliente = prisma) {
   if (grupos.length === 0) return grupos;
 
   const ids = grupos.map((grupo) => grupo.gru_id);
-  const [viagens, domesticos] = await Promise.all([
-    cliente.$queryRaw`SELECT "gru_id", "via_partida", "via_destino", "via_data_inicio", "via_data_fim" FROM "viagem" WHERE "gru_id" IN (${Prisma.join(ids)})`,
-    cliente.$queryRaw`SELECT "gru_id", "dom_endereco", "dom_aluguel", "dom_luz", "dom_agua", "dom_internet" FROM "domestico" WHERE "gru_id" IN (${Prisma.join(ids)})`,
-  ]);
+  const viagens = await cliente.$queryRaw`SELECT "gru_id", "via_partida", "via_destino", "via_data_inicio", "via_data_fim" FROM "viagem" WHERE "gru_id" IN (${Prisma.join(ids)})`;
   const viagensPorGrupo = new Map(viagens.map((viagem) => [viagem.gru_id, viagem]));
-  const domesticosPorGrupo = new Map(domesticos.map((domestico) => [domestico.gru_id, domestico]));
 
   return grupos.map((grupo) => ({
     ...grupo,
     viagem: viagensPorGrupo.get(grupo.gru_id) ?? null,
-    domestico: domesticosPorGrupo.get(grupo.gru_id) ?? null,
   }));
 }
 
@@ -56,6 +51,32 @@ async function criarGrupo(req, res) {
       const creatorExists = await prisma.usuario.findUnique({ where: { usu_id: creatorId }, select: { usu_id: true } });
       if (!creatorExists) return res.status(400).json({ erro: "Usuário criador não encontrado." });
     }
+
+    const itensRecebidos = req.body.itens ?? [];
+    if (!Array.isArray(itensRecebidos)) {
+      return res.status(400).json({ erro: "A lista de despesas deve ser um array." });
+    }
+    const itens = [];
+    for (const [indice, item] of itensRecebidos.entries()) {
+      const nome = typeof item?.ite_nome === "string" ? item.ite_nome.trim() : "";
+      const valor = Number(item?.ite_valor);
+      const participantesRecebidos = item?.usu_ids;
+      if (participantesRecebidos !== undefined && !Array.isArray(participantesRecebidos)) {
+        return res.status(400).json({ erro: `Os participantes da despesa ${indice + 1} são inválidos.` });
+      }
+      const participantes = participantesRecebidos === undefined
+        ? (creatorId === null ? [] : [creatorId])
+        : [...new Set(participantesRecebidos.map(Number))];
+
+      if (!nome || nome.length > 100 || !Number.isFinite(valor) || valor < 0) {
+        return res.status(400).json({ erro: `A despesa ${indice + 1} precisa de nome e valor válido.` });
+      }
+      if (participantes.some((id) => !Number.isInteger(id) || id < 1)) {
+        return res.status(400).json({ erro: `Os participantes da despesa ${indice + 1} são inválidos.` });
+      }
+      itens.push({ nome, valor, participantes });
+    }
+
     dados.gru_criador_id = creatorId;
     dados.gru_criador_nome = creatorName || null;
     dados.gru_num_vagas = Math.max(0, Number(dados.gru_num_part) - 1);
@@ -74,6 +95,34 @@ async function criarGrupo(req, res) {
         await tx.participar.create({ data: { usu_id: creatorId, gru_id: grupo.gru_id } });
       }
 
+      for (const item of itens) {
+        if (item.participantes.length > 0) {
+          const participacoes = await tx.participar.findMany({
+            where: { gru_id: grupo.gru_id, usu_id: { in: item.participantes } },
+            select: { usu_id: true },
+          });
+          if (participacoes.length !== item.participantes.length) {
+            const erro = new Error("Cada participante da despesa precisa pertencer ao grupo.");
+            erro.statusCode = 400;
+            throw erro;
+          }
+        }
+
+        const novoItem = await tx.item.create({
+          data: {
+            ite_nome: item.nome,
+            ite_valor: item.valor,
+            gru_id: grupo.gru_id,
+          },
+        });
+        if (item.participantes.length > 0) {
+          await tx.item_usuario.createMany({
+            data: item.participantes.map((usu_id) => ({ ite_id: novoItem.ite_id, usu_id })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
       if (dados.cat_id === 1) {
         if (detalhes.str_valor === undefined || Number.isNaN(Number(detalhes.str_valor))) {
           const erro = new Error("O valor do streaming é obrigatório.");
@@ -89,16 +138,6 @@ async function criarGrupo(req, res) {
             str_valor: Number(detalhes.str_valor),
           },
         });
-      }
-
-      if (dados.cat_id === 2) {
-        const camposDomesticos = ["dom_aluguel", "dom_luz", "dom_agua", "dom_internet"];
-        if (camposDomesticos.some((campo) => detalhes[campo] === undefined || Number.isNaN(Number(detalhes[campo])))) {
-          const erro = new Error("Os valores domésticos são obrigatórios.");
-          erro.statusCode = 400;
-          throw erro;
-        }
-        await tx.$executeRaw`INSERT INTO "domestico" ("cat_id", "gru_id", "dom_aluguel", "dom_luz", "dom_agua", "dom_internet", "dom_endereco") VALUES (${grupo.cat_id}, ${grupo.gru_id}, ${Number(detalhes.dom_aluguel)}, ${Number(detalhes.dom_luz)}, ${Number(detalhes.dom_agua)}, ${Number(detalhes.dom_internet)}, ${detalhes.dom_endereco || null})`;
       }
 
       if (dados.cat_id === 3) {
@@ -128,6 +167,7 @@ async function listarGrupos(req, res) {
         categoria: true,
         stream: true,
         criador: { select: { usu_id: true, usu_nome: true } },
+        item: { select: { ite_valor: true } },
         _count: { select: { participacoes: true } },
       },
       orderBy: { gru_id: "asc" },
@@ -144,7 +184,7 @@ async function buscarPorId(req, res) {
     const { id } = req.params;
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
-      include: { categoria: true, mensalidade: true, stream: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, stream: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
     });
     if (!grupo) return res.status(404).json({ erro: "Grupo não encontrado." });
     return res.status(200).json(formatResult((await anexarDetalhesLegados([grupo]))[0]));
@@ -160,7 +200,7 @@ async function buscarPorCategoriaNome(req, res) {
     if (!nome) return res.status(400).json({ erro: "Parametro 'nome' é obrigatório." });
     const grupos = await prisma.grupo.findMany({
       where: { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
-      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -176,7 +216,7 @@ async function buscarPorQuantidade(req, res) {
     if (Number.isNaN(parsed)) return res.status(400).json({ erro: "Número inválido." });
     const grupos = await prisma.grupo.findMany({
       where: { gru_num_part: parsed },
-      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -195,7 +235,7 @@ async function procurarPorNomeGeral(req, res) {
           { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
         ],
       },
-      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
