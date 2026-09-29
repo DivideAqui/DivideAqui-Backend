@@ -99,7 +99,6 @@ async function listarGrupos(req, res) {
         mensalidade: true,
         categoria: true,
         stream: true,
-        participacoes: { include: { usuario: true } },
         _count: { select: { participacoes: true } },
       },
       orderBy: { gru_id: "asc" },
@@ -116,7 +115,7 @@ async function buscarPorId(req, res) {
     const { id } = req.params;
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
-      include: { categoria: true, mensalidade: true, stream: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, stream: true, _count: { select: { participacoes: true } } },
     });
     if (!grupo) return res.status(404).json({ erro: "Grupo não encontrado." });
     return res.status(200).json(formatResult((await anexarDetalhesLegados([grupo]))[0]));
@@ -132,7 +131,7 @@ async function buscarPorCategoriaNome(req, res) {
     if (!nome) return res.status(400).json({ erro: "Parametro 'nome' é obrigatório." });
     const grupos = await prisma.grupo.findMany({
       where: { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
-      include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -148,7 +147,7 @@ async function buscarPorQuantidade(req, res) {
     if (Number.isNaN(parsed)) return res.status(400).json({ erro: "Número inválido." });
     const grupos = await prisma.grupo.findMany({
       where: { gru_num_part: parsed },
-      include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -167,7 +166,7 @@ async function procurarPorNomeGeral(req, res) {
           { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
         ],
       },
-      include: { categoria: true, mensalidade: true, participacoes: { include: { usuario: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
