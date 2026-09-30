@@ -53,6 +53,7 @@ async function criarUsuarios(req, res) {
       {
         id: novoUsuario.usu_id.toString(),
         email: novoUsuario.usu_email,
+        name: novoUsuario.usu_nome
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" },
@@ -174,15 +175,53 @@ async function loginUsuario(req, res) {
     {
       id: userExistente.usu_id.toString(),
       email: userExistente.usu_email,
+      name: userExistente.usu_nome
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
   return res.status(200).json({ token });
 }
+async function atualizarUsu(req, res) {
+  const { id } = req.params;
+  const { name, email, password, telefone, avali, data_nasc, descri } =
+    req.body;
+
+  //Verifica se o usuário existe
+  const existeUsu = await prisma.usuario.findUnique({
+    where: { usu_id: parseInt(id) },
+  });
+
+  if (!existeUsu) {
+    return res.status(404).json({ error: "Usuario não encontrado" });
+  }
+  // Data pra enviar pro back( falta a prr da descriççao cheio de odio)
+  const data = {};
+
+  if (name) data.usu_nome = name;
+  if (email) data.usu_email = email;
+  if (telefone) data.usu_telefone = telefone;
+  if (data_nasc) data.usu_data_nasc = data_nasc;
+  if (descri) data.usu_descricao = descri;
+  // hash de senha cheio de odio
+  if (password) data.usu_senha = await bcrypt.hash(password, 10);
+
+  // Se nenhum campo foi enviado para atualizar
+  if (Object.keys(data).length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Nenhum campo foi informado para atualizar" });
+  }
+  // Atualiza no banco de dados(vou pegar a prr da Data e jogar no back)
+  const atualizaBack = await prisma.usuario.update({
+    where: { usu_id: parseInt(id) },
+    data: data,
+  });
+}
 module.exports = {
   criarUsuarios,
   procurarCliepeloid,
   procurarClirGeral,
   loginUsuario,
+  atualizarUsu
 };

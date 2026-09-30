@@ -4,7 +4,7 @@ const path = require("path");
 const autenticar = require('../middlewares/autenticar');
 const { criarAvaliacao, buscarMediaAvaliacao } = require("../controllers/avaliacao.controller.js");
 
-const { criarUsuarios, procurarCliepeloid, procurarClirGeral, loginUsuario } = require("../controllers/usuario.controller.js");
+const { criarUsuarios, procurarCliepeloid, procurarClirGeral, loginUsuario, atualizarUsu } = require("../controllers/usuario.controller.js");
 
 //Post
 router.post("/Cadastro", criarUsuarios);
@@ -21,4 +21,7 @@ router.get("/usuarioid", procurarClirGeral);
 router.get("/perfil", autenticar, (req, res)=>{
   res.json({ usuario: req.usuario });
 })
+
+//patch
+router.patch("/usuarioatualizar/:id", atualizarUsu)
 module.exports = router;

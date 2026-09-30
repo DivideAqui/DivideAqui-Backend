@@ -184,8 +184,20 @@ async function buscarPorId(req, res) {
     const { id } = req.params;
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
-      include: { categoria: true, mensalidade: true, stream: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
-    });
+     include: {
+    categoria: true,
+    mensalidade: true,
+    stream: true,
+    criador: { select: { usu_id: true, usu_nome: true } },
+    item: { select: { ite_valor: true } },
+    participacoes: {
+      include: {
+        usuario: { select: { usu_id: true, usu_nome: true } },
+      },
+    },
+    _count: { select: { participacoes: true } },
+  },
+});
     if (!grupo) return res.status(404).json({ erro: "Grupo não encontrado." });
     return res.status(200).json(formatResult((await anexarDetalhesLegados([grupo]))[0]));
   } catch (error) {
