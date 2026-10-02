@@ -217,11 +217,41 @@ async function atualizarUsu(req, res) {
     where: { usu_id: parseInt(id) },
     data: data,
   });
+
+  return res.status(200).json(atualizaBack);
+}
+async function compararSenha(req, res) {
+  try{
+  const{id} = req.params
+  const {password} = req.body
+
+  
+  const user = await prisma.usuario.findFirst({
+    where: { usu_id: parseInt(id) }
+  })
+
+  if (!user) {
+  return res.status(404).json({ erro: "Usuário não encontrado" });
+  }
+
+  const comparar = await bcrypt.compare(password, user.usu_senha);
+ 
+  if(!comparar){
+    return res.status(401).json({
+      erro: "Senha errada"
+    })
+  }
+  return res.status(200).json({comparar})
+  }catch (erro) {
+  console.error(erro);
+  return res.status(500).json({ erro: "Erro ao comparar senha" });
+}
 }
 module.exports = {
   criarUsuarios,
   procurarCliepeloid,
   procurarClirGeral,
   loginUsuario,
-  atualizarUsu
+  atualizarUsu,
+  compararSenha
 };
