@@ -1,0 +1,382 @@
+warning: in the working copy of 'prisma/schema.prisma', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/prisma/schema.prisma b/prisma/schema.prisma[m
+[1mindex fc85cff..5bc50de 100644[m
+[1m--- a/prisma/schema.prisma[m
+[1m+++ b/prisma/schema.prisma[m
+[36m@@ -1,190 +1,186 @@[m
+[31m-generator client {[m
+[31m-  provider = "prisma-client-js"[m
+[31m-  previewFeatures = ["driverAdapters"][m
+[31m-}[m
+[31m-[m
+[31m-datasource db {[m
+[31m-  provider = "postgresql"[m
+[31m-  url      = env("DATABASE_URL")[m
+[31m-}[m
+[31m-[m
+[31m-model usuario {[m
+[31m-  usu_id                                     Int            @id @default(autoincrement())[m
+[31m-  usu_nome                                   String         @db.VarChar(50)[m
+[31m-  usu_email                                  String         @unique @db.VarChar(255)[m
+[31m-  usu_senha                                  String         @db.VarChar(255)[m
+[31m-  usu_cpf                                    String         @unique @db.VarChar(14)[m
+[31m-  usu_telefone                               String?        @db.VarChar(15)[m
+[31m-  usu_data_nasc                              DateTime       @db.Date[m
+[31m-  usu_descricao                              String?        @db.VarChar(120)[m
+[31m-  avaliacao_avaliacao_ava_avaliadoTousuario  avaliacao[]    @relation("avaliacao_ava_avaliadoTousuario")[m
+[31m-  avaliacao_avaliacao_ava_avaliadorTousuario avaliacao[]    @relation("avaliacao_ava_avaliadorTousuario")[m
+[31m-  item_usuario                               item_usuario[][m
+[31m-  mensalidades                               mensalidade[][m
+[31m-  notificacao                                notificacao[][m
+[31m-  participacoes                              participar[][m
+[31m-  gruposCriados                              grupo[]        @relation("grupo_criador")[m
+[31m-[m
+[31m-  @@map("usuario")[m
+[31m-}[m
+[31m-[m
+[31m-model mensalidade {[m
+[31m-  men_id         Int          @id @default(autoincrement())[m
+[31m-  men_status_pag String       @db.VarChar(20)[m
+[31m-  men_data_lan   DateTime     @db.Date[m
+[31m-  men_valor_pago Decimal      @db.Decimal(10, 2)[m
+[31m-  men_data_ven   DateTime     @db.Date[m
+[31m-  men_valor      Decimal      @db.Decimal(10, 2)[m
+[31m-  men_data_pag   DateTime     @db.Date[m
+[31m-  usu_id         Int[m
+[31m-  men_divisao    tipo_divisao @default(Igualitaria)[m
+[31m-  grupos         grupo[][m
+[31m-  usuario        usuario      @relation(fields: [usu_id], references: [usu_id], onDelete: NoAction, onUpdate: NoAction)[m
+[31m-[m
+[31m-  @@map("mensalidade")[m
+[31m-}[m
+[31m-[m
+[31m-model grupo {[m
+[31m-  gru_id           Int          @id @default(autoincrement())[m
+[31m-  gru_num_part     Int[m
+[31m-  cat_id           Int[m
+[31m-  gru_nome         String?      @db.VarChar(20)[m
+[31m-  gru_descricao    String?      @db.VarChar(150)[m
+[31m-  gru_visibilidade Boolean?     @default(false)[m
+[31m-  gru_cor          String?      @db.VarChar(7)[m
+[31m-  gru_icone        String?      @db.VarChar(50)[m
+[31m-  men_id           Int?[m
+[31m-  gru_num_vagas    Int?[m
+[31m-    gru_criador_id   Int?[m
+[31m-    gru_criador_nome String?      @db.VarChar(50)[m
+[31m-  avaliacao        avaliacao[][m
+[31m-  domestico        domestico?   @ignore[m
+[31m-  mensalidade      mensalidade? @relation(fields: [men_id], references: [men_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupo_mensalidade")[m
+[31m-  categoria        categoria    @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)[m
+[31m-  item             item[][m
+[31m-  participacoes    participar[][m
+[31m-  criador          usuario?     @relation("grupo_criador", fields: [gru_criador_id], references: [usu_id], onDelete: SetNull, onUpdate: Cascade, map: "fk_grupo_criador")[m
+[31m-  stream           stream?[m
+[31m-  viagem           viagem?      @ignore[m
+[31m-[m
+[31m-  @@map("grupo")[m
+[31m-}[m
+[31m-[m
+[31m-model participar {[m
+[31m-  par_id  Int     @id @default(autoincrement())[m
+[31m-  usu_id  Int[m
+[31m-  gru_id  Int[m
+[31m-  grupo   grupo   @relation(fields: [gru_id], references: [gru_id], onDelete: NoAction, onUpdate: NoAction)[m
+[31m-  usuario usuario @relation(fields: [usu_id], references: [usu_id], onDelete: NoAction, onUpdate: NoAction)[m
+[31m-[m
+[31m-  @@map("participar")[m
+[31m-}[m
+[31m-[m
+[31m-model categoria {[m
+[31m-  cat_id     Int         @id @default(autoincrement())[m
+[31m-  cat_nome   String      @db.VarChar(50)[m
+[31m-  domesticos domestico[] @ignore[m
+[31m-  grupos     grupo[][m
+[31m-  streams    stream[][m
+[31m-  streaming  streaming?[m
+[31m-  viagens    viagem[]    @ignore[m
+[31m-[m
+[31m-  @@map("categoria")[m
+[31m-}[m
+[31m-[m
+[31m-model stream {[m
+[31m-  cat_id    Int?[m
+[31m-  gru_id    Int        @unique[m
+[31m-  str_plano String?    @db.VarChar(100)[m
+[31m-  str_telas Int?[m
+[31m-  str_valor Decimal    @db.Decimal(10, 2)[m
+[31m-  categoria categoria? @relation(fields: [cat_id], references: [cat_id])[m
+[31m-  grupo     grupo      @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)[m
+[31m-[m
+[31m-  @@map("stream")[m
+[31m-}[m
+[31m-[m
+[31m-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.[m
+[31m-model viagem {[m
+[31m-  cat_id          Int[m
+[31m-  via_partida     String    @db.VarChar(50)[m
+[31m-  via_destino     String    @db.VarChar(50)[m
+[31m-  via_data_inicio DateTime  @db.Date[m
+[31m-  via_data_fim    DateTime  @db.Date[m
+[31m-  gru_id          Int?      @unique[m
+[31m-  categoria       categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)[m
+[31m-  grupo           grupo?    @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)[m
+[31m-[m
+[31m-  @@map("viagem")[m
+[31m-  @@ignore[m
+[31m-}[m
+[31m-[m
+[31m-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.[m
+[31m-model domestico {[m
+[31m-  cat_id       Int[m
+[31m-  dom_endereco String?   @db.VarChar(150)[m
+[31m-  gru_id       Int?      @unique[m
+[31m-  categoria    categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)[m
+[31m-  grupo        grupo?    @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)[m
+[31m-[m
+[31m-  @@map("domestico")[m
+[31m-  @@ignore[m
+[31m-}[m
+[31m-[m
+[31m-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.[m
+[31m-model avaliacao {[m
+[31m-  ava_id                                   Int     @id @default(autoincrement())[m
+[31m-  ava_nota                                 Int[m
+[31m-  ava_descricao                            String? @db.VarChar(200)[m
+[31m-  ava_avaliado                             Int[m
+[31m-  ava_avaliador                            Int[m
+[31m-  ava_grupo                                Int[m
+[31m-  usuario_avaliacao_ava_avaliadoTousuario  usuario @relation("avaliacao_ava_avaliadoTousuario", fields: [ava_avaliado], references: [usu_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_avaliado")[m
+[31m-  usuario_avaliacao_ava_avaliadorTousuario usuario @relation("avaliacao_ava_avaliadorTousuario", fields: [ava_avaliador], references: [usu_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_avaliador")[m
+[31m-  grupo                                    grupo   @relation(fields: [ava_grupo], references: [gru_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_grupo")[m
+[31m-}[m
+[31m-[m
+[31m-model item {[m
+[31m-  ite_id          Int            @id @default(autoincrement())[m
+[31m-  ite_nome        String         @db.VarChar(100)[m
+[31m-  ite_valor       Decimal        @db.Decimal(10, 2)[m
+[31m-  ite_nota_fiscal String?[m
+[31m-  ite_recorrente  Boolean?       @default(false)[m
+[31m-  gru_id          Int[m
+[31m-  grupo           grupo          @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade, onUpdate: NoAction)[m
+[31m-  item_usuario    item_usuario[][m
+[31m-}[m
+[31m-[m
+[31m-model item_usuario {[m
+[31m-  ite_id  Int[m
+[31m-  usu_id  Int[m
+[31m-  item    item    @relation(fields: [ite_id], references: [ite_id], onDelete: Cascade, onUpdate: NoAction)[m
+[31m-  usuario usuario @relation(fields: [usu_id], references: [usu_id], onDelete: Cascade, onUpdate: NoAction)[m
+[31m-[m
+[31m-  @@id([ite_id, usu_id])[m
+[31m-}[m
+[31m-[m
+[31m-model notificacao {[m
+[31m-  not_notificacao_id       Int      @id @default(autoincrement())[m
+[31m-  not_user_id              Int[m
+[31m-  not_notificacao_tipo     String   @db.VarChar(50)[m
+[31m-  not_notificacao_titulo   String   @db.VarChar(255)[m
+[31m-  not_notificacao_mensagem String[m
+[31m-  not_notificacao_lida     Boolean  @default(false)[m
+[31m-  not_notificacao_data     DateTime @default(now()) @db.Timestamp(6)[m
+[31m-  usu_id                   Int?[m
+[31m-  usuario                  usuario  @relation(fields: [not_user_id], references: [usu_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notificacao_usuario")[m
+[31m-}[m
+[31m-[m
+[31m-model streaming {[m
+[31m-  cat_id           Int       @id(map: "stream_pkey")[m
+[31m-  str_dtvencimento DateTime  @db.Date[m
+[31m-  categoria        categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction, map: "stream_cat_id_fkey")[m
+[31m-}[m
+[31m-[m
+[31m-enum tipo_divisao {[m
+[31m-  Igualitaria   @map("Igualitária")[m
+[31m-  Personalizada @map("Personalizada")[m
+[31m-[m
+[31m-  @@map("tipo_divisao")[m
+[31m-}[m
+[32m+[m[32mgenerator client {[m
+[32m+[m[32m  provider        = "prisma-client-js"[m
+[32m+[m[32m  previewFeatures = ["driverAdapters"][m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mdatasource db {[m
+[32m+[m[32m  provider = "postgresql"[m
+[32m+[m[32m  url      = env("DATABASE_URL")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel usuario {[m
+[32m+[m[32m  usu_id                                     BigInt         @id @default(autoincrement())[m
+[32m+[m[32m  usu_nome                                   String         @db.VarChar(50)[m
+[32m+[m[32m  usu_email                                  String         @unique @db.VarChar(255)[m
+[32m+[m[32m  usu_senha                                  String         @db.VarChar(255)[m
+[32m+[m[32m  usu_cpf                                    String         @unique @db.VarChar(14)[m
+[32m+[m[32m  usu_telefone                               String?        @db.VarChar(15)[m
+[32m+[m[32m  usu_data_nasc                              DateTime       @db.Date[m
+[32m+[m[32m  usu_descricao                              String?        @db.VarChar(120)[m
+[32m+[m[32m  usu_foto                                   String?[m
+[32m+[m[32m  avaliacao_avaliacao_ava_avaliadoTousuario  avaliacao[]    @relation("avaliacao_ava_avaliadoTousuario")[m
+[32m+[m[32m  avaliacao_avaliacao_ava_avaliadorTousuario avaliacao[]    @relation("avaliacao_ava_avaliadorTousuario")[m
+[32m+[m[32m  gruposCriados                              grupo[]        @relation("grupo_criador")[m
+[32m+[m[32m  item_usuario                               item_usuario[][m
+[32m+[m[32m  mensalidades                               mensalidade[][m
+[32m+[m[32m  notificacao                                notificacao[][m
+[32m+[m[32m  participacoes                              participar[][m
+[32m+[m
+[32m+[m[32m  @@map("usuario")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel mensalidade {[m
+[32m+[m[32m  men_id         Int          @id @default(autoincrement())[m
+[32m+[m[32m  men_status_pag String       @db.VarChar(20)[m
+[32m+[m[32m  men_data_lan   DateTime     @db.Date[m
+[32m+[m[32m  men_valor_pago Decimal      @db.Decimal(10, 2)[m
+[32m+[m[32m  men_data_ven   DateTime     @db.Date[m
+[32m+[m[32m  men_valor      Decimal      @db.Decimal(10, 2)[m
+[32m+[m[32m  men_data_pag   DateTime     @db.Date[m
+[32m+[m[32m  usu_id         BigInt[m
+[32m+[m[32m  men_divisao    tipo_divisao @default(Igualitaria)[m
+[32m+[m[32m  grupos         grupo[][m
+[32m+[m[32m  usuario        usuario      @relation(fields: [usu_id], references: [usu_id], onDelete: NoAction, onUpdate: NoAction)[m
+[32m+[m
+[32m+[m[32m  @@map("mensalidade")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel grupo {[m
+[32m+[m[32m  gru_id           Int          @id @default(autoincrement())[m
+[32m+[m[32m  gru_num_part     Int[m
+[32m+[m[32m  cat_id           Int[m
+[32m+[m[32m  gru_nome         String       @db.VarChar(20)[m
+[32m+[m[32m  gru_descricao    String?      @db.VarChar(150)[m
+[32m+[m[32m  gru_visibilidade Boolean      @default(false)[m
+[32m+[m[32m  gru_cor          String?      @db.VarChar(7)[m
+[32m+[m[32m  gru_icone        String?      @db.VarChar(50)[m
+[32m+[m[32m  men_id           Int?[m
+[32m+[m[32m  gru_num_vagas    Int?[m
+[32m+[m[32m  gru_criador_id   BigInt?[m
+[32m+[m[32m  gru_criador_nome String?      @db.VarChar(50)[m
+[32m+[m[32m  avaliacao        avaliacao[][m
+[32m+[m[32m  domestico        domestico?[m
+[32m+[m[32m  criador          usuario?     @relation("grupo_criador", fields: [gru_criador_id], references: [usu_id], map: "fk_grupo_criador")[m
+[32m+[m[32m  mensalidade      mensalidade? @relation(fields: [men_id], references: [men_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupo_mensalidade")[m
+[32m+[m[32m  categoria        categoria    @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)[m
+[32m+[m[32m  item             item[][m
+[32m+[m[32m  participacoes    participar[][m
+[32m+[m[32m  stream           stream?[m
+[32m+[m[32m  viagem           viagem?[m
+[32m+[m
+[32m+[m[32m  @@map("grupo")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel participar {[m
+[32m+[m[32m  par_id  Int     @id @default(autoincrement())[m
+[32m+[m[32m  usu_id  BigInt[m
+[32m+[m[32m  gru_id  Int[m
+[32m+[m[32m  grupo   grupo   @relation(fields: [gru_id], references: [gru_id], onDelete: NoAction, onUpdate: NoAction)[m
+[32m+[m[32m  usuario usuario @relation(fields: [usu_id], references: [usu_id], onDelete: NoAction, onUpdate: NoAction)[m
+[32m+[m
+[32m+[m[32m  @@map("participar")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel categoria {[m
+[32m+[m[32m  cat_id     Int         @id @default(autoincrement())[m
+[32m+[m[32m  cat_nome   String      @db.VarChar(50)[m
+[32m+[m[32m  domesticos domestico[][m
+[32m+[m[32m  grupos     grupo[][m
+[32m+[m[32m  streams    stream[][m
+[32m+[m[32m  viagens    viagem[][m
+[32m+[m
+[32m+[m[32m  @@map("categoria")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel stream {[m
+[32m+[m[32m  cat_id           Int?[m
+[32m+[m[32m  gru_id           Int        @unique[m
+[32m+[m[32m  str_valor        Decimal    @db.Decimal(10, 2)[m
+[32m+[m[32m  str_plano        String     @db.VarChar(100)[m
+[32m+[m[32m  str_telas        Int[m
+[32m+[m[32m  str_dtvencimento DateTime   @db.Date[m
+[32m+[m[32m  categoria        categoria? @relation(fields: [cat_id], references: [cat_id])[m
+[32m+[m[32m  grupo            grupo      @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)[m
+[32m+[m
+[32m+[m[32m  @@map("stream")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.[m
+[32m+[m[32mmodel viagem {[m
+[32m+[m[32m  cat_id          Int[m
+[32m+[m[32m  via_partida     String    @db.VarChar(50)[m
+[32m+[m[32m  via_destino     String    @db.VarChar(50)[m
+[32m+[m[32m  via_data_inicio DateTime  @db.Date[m
+[32m+[m[32m  via_data_fim    DateTime  @db.Date[m
+[32m+[m[32m  gru_id          Int       @unique[m
+[32m+[m[32m  categoria       categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)[m
+[32m+[m[32m  grupo           grupo     @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)[m
+[32m+[m
+[32m+[m[32m  @@map("viagem")[m
+[32m+[m[32m  @@ignore[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.[m
+[32m+[m[32mmodel domestico {[m
+[32m+[m[32m  cat_id       Int[m
+[32m+[m[32m  dom_endereco String?   @db.VarChar(150)[m
+[32m+[m[32m  gru_id       Int       @unique[m
+[32m+[m[32m  categoria    categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)[m
+[32m+[m[32m  grupo        grupo     @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)[m
+[32m+[m
+[32m+[m[32m  @@map("domestico")[m
+[32m+[m[32m  @@ignore[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.[m
+[32m+[m[32mmodel avaliacao {[m
+[32m+[m[32m  ava_id                                   Int     @id @default(autoincrement())[m
+[32m+[m[32m  ava_nota                                 Int[m
+[32m+[m[32m  ava_descricao                            String? @db.VarChar(200)[m
+[32m+[m[32m  ava_avaliado                             BigInt[m
+[32m+[m[32m  ava_avaliador                            BigInt[m
+[32m+[m[32m  gru_id                                   Int?[m
+[32m+[m[32m  gru_nome                                 String? @db.VarChar(20)[m
+[32m+[m[32m  usuario_avaliacao_ava_avaliadoTousuario  usuario @relation("avaliacao_ava_avaliadoTousuario", fields: [ava_avaliado], references: [usu_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_avaliado")[m
+[32m+[m[32m  usuario_avaliacao_ava_avaliadorTousuario usuario @relation("avaliacao_ava_avaliadorTousuario", fields: [ava_avaliador], references: [usu_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_avaliador")[m
+[32m+[m[32m  grupo                                    grupo?  @relation(fields: [gru_id], references: [gru_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_grupo")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel item {[m
+[32m+[m[32m  ite_id          Int            @id @default(autoincrement())[m
+[32m+[m[32m  ite_nome        String         @db.VarChar(100)[m
+[32m+[m[32m  ite_valor       Decimal        @db.Decimal(10, 2)[m
+[32m+[m[32m  ite_nota_fiscal String?[m
+[32m+[m[32m  ite_recorrente  Boolean?       @default(false)[m
+[32m+[m[32m  gru_id          Int[m
+[32m+[m[32m  grupo           grupo          @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade, onUpdate: NoAction)[m
+[32m+[m[32m  item_usuario    item_usuario[][m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel item_usuario {[m
+[32m+[m[32m  ite_id  Int[m
+[32m+[m[32m  usu_id  BigInt[m
+[32m+[m[32m  item    item    @relation(fields: [ite_id], references: [ite_id], onDelete: Cascade, onUpdate: NoAction)[m
+[32m+[m[32m  usuario usuario @relation(fields: [usu_id], references: [usu_id], onDelete: Cascade, onUpdate: NoAction)[m
+[32m+[m
+[32m+[m[32m  @@id([ite_id, usu_id])[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel notificacao {[m
+[32m+[m[32m  not_notificacao_id       Int      @id @default(autoincrement())[m
+[32m+[m[32m  not_user_id              BigInt[m
+[32m+[m[32m  not_notificacao_tipo     String   @db.VarChar(50)[m
+[32m+[m[32m  not_notificacao_titulo   String   @db.VarChar(255)[m
+[32m+[m[32m  not_notificacao_mensagem String[m
+[32m+[m[32m  not_notificacao_lida     Boolean  @default(false)[m
+[32m+[m[32m  not_notificacao_data     DateTime @default(now()) @db.Timestamp(6)[m
+[32m+[m[32m  usu_id                   BigInt?[m
+[32m+[m[32m  usuario                  usuario  @relation(fields: [not_user_id], references: [usu_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notificacao_usuario")[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32menum tipo_divisao {[m
+[32m+[m[32m  Igualitaria   @map("Igualitária")[m
+[32m+[m[32m  Personalizada @map("Personalizada")[m
+[32m+[m
+[32m+[m[32m  @@map("tipo_divisao")[m
+[32m+[m[32m}[m

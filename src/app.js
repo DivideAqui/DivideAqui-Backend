@@ -1,3 +1,7 @@
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
 const express = require("express");
 const cors = require("cors");
 const routes = require("./routes/usuario.routes");

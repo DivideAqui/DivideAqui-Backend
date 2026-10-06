@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -9,7 +9,7 @@ datasource db {
 }
 
 model usuario {
-  usu_id                                     Int            @id @default(autoincrement())
+  usu_id                                     BigInt         @id @default(autoincrement())
   usu_nome                                   String         @db.VarChar(50)
   usu_email                                  String         @unique @db.VarChar(255)
   usu_senha                                  String         @db.VarChar(255)
@@ -17,13 +17,14 @@ model usuario {
   usu_telefone                               String?        @db.VarChar(15)
   usu_data_nasc                              DateTime       @db.Date
   usu_descricao                              String?        @db.VarChar(120)
+  usu_foto                                   String?
   avaliacao_avaliacao_ava_avaliadoTousuario  avaliacao[]    @relation("avaliacao_ava_avaliadoTousuario")
   avaliacao_avaliacao_ava_avaliadorTousuario avaliacao[]    @relation("avaliacao_ava_avaliadorTousuario")
+  gruposCriados                              grupo[]        @relation("grupo_criador")
   item_usuario                               item_usuario[]
   mensalidades                               mensalidade[]
   notificacao                                notificacao[]
   participacoes                              participar[]
-  gruposCriados                              grupo[]        @relation("grupo_criador")
 
   @@map("usuario")
 }
@@ -36,7 +37,7 @@ model mensalidade {
   men_data_ven   DateTime     @db.Date
   men_valor      Decimal      @db.Decimal(10, 2)
   men_data_pag   DateTime     @db.Date
-  usu_id         Int
+  usu_id         BigInt
   men_divisao    tipo_divisao @default(Igualitaria)
   grupos         grupo[]
   usuario        usuario      @relation(fields: [usu_id], references: [usu_id], onDelete: NoAction, onUpdate: NoAction)
@@ -48,31 +49,31 @@ model grupo {
   gru_id           Int          @id @default(autoincrement())
   gru_num_part     Int
   cat_id           Int
-  gru_nome         String?      @db.VarChar(20)
+  gru_nome         String       @db.VarChar(20)
   gru_descricao    String?      @db.VarChar(150)
-  gru_visibilidade Boolean?     @default(false)
+  gru_visibilidade Boolean      @default(false)
   gru_cor          String?      @db.VarChar(7)
   gru_icone        String?      @db.VarChar(50)
   men_id           Int?
   gru_num_vagas    Int?
-    gru_criador_id   Int?
-    gru_criador_nome String?      @db.VarChar(50)
+  gru_criador_id   BigInt?
+  gru_criador_nome String?      @db.VarChar(50)
   avaliacao        avaliacao[]
-  domestico        domestico?   @ignore
+  domestico        domestico?
+  criador          usuario?     @relation("grupo_criador", fields: [gru_criador_id], references: [usu_id], map: "fk_grupo_criador")
   mensalidade      mensalidade? @relation(fields: [men_id], references: [men_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupo_mensalidade")
   categoria        categoria    @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)
   item             item[]
   participacoes    participar[]
-  criador          usuario?     @relation("grupo_criador", fields: [gru_criador_id], references: [usu_id], onDelete: SetNull, onUpdate: Cascade, map: "fk_grupo_criador")
   stream           stream?
-  viagem           viagem?      @ignore
+  viagem           viagem?
 
   @@map("grupo")
 }
 
 model participar {
   par_id  Int     @id @default(autoincrement())
-  usu_id  Int
+  usu_id  BigInt
   gru_id  Int
   grupo   grupo   @relation(fields: [gru_id], references: [gru_id], onDelete: NoAction, onUpdate: NoAction)
   usuario usuario @relation(fields: [usu_id], references: [usu_id], onDelete: NoAction, onUpdate: NoAction)
@@ -83,23 +84,23 @@ model participar {
 model categoria {
   cat_id     Int         @id @default(autoincrement())
   cat_nome   String      @db.VarChar(50)
-  domesticos domestico[] @ignore
+  domesticos domestico[]
   grupos     grupo[]
   streams    stream[]
-  streaming  streaming?
-  viagens    viagem[]    @ignore
+  viagens    viagem[]
 
   @@map("categoria")
 }
 
 model stream {
-  cat_id    Int?
-  gru_id    Int        @unique
-  str_plano String?    @db.VarChar(100)
-  str_telas Int?
-  str_valor Decimal    @db.Decimal(10, 2)
-  categoria categoria? @relation(fields: [cat_id], references: [cat_id])
-  grupo     grupo      @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
+  cat_id           Int?
+  gru_id           Int        @unique
+  str_valor        Decimal    @db.Decimal(10, 2)
+  str_plano        String     @db.VarChar(100)
+  str_telas        Int
+  str_dtvencimento DateTime   @db.Date
+  categoria        categoria? @relation(fields: [cat_id], references: [cat_id])
+  grupo            grupo      @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
 
   @@map("stream")
 }
@@ -111,24 +112,21 @@ model viagem {
   via_destino     String    @db.VarChar(50)
   via_data_inicio DateTime  @db.Date
   via_data_fim    DateTime  @db.Date
-  gru_id          Int?      @unique
+  gru_id          Int       @id
   categoria       categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)
-  grupo           grupo?    @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
+  grupo           grupo     @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
 
   @@map("viagem")
-  @@ignore
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model domestico {
   cat_id       Int
   dom_endereco String?   @db.VarChar(150)
-  gru_id       Int?      @unique
+  gru_id       Int       @id
   categoria    categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)
-  grupo        grupo?    @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
+  grupo        grupo     @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
 
   @@map("domestico")
-  @@ignore
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -136,12 +134,13 @@ model avaliacao {
   ava_id                                   Int     @id @default(autoincrement())
   ava_nota                                 Int
   ava_descricao                            String? @db.VarChar(200)
-  ava_avaliado                             Int
-  ava_avaliador                            Int
-  ava_grupo                                Int
+  ava_avaliado                             BigInt
+  ava_avaliador                            BigInt
+  gru_id                                   Int?
+  gru_nome                                 String? @db.VarChar(20)
   usuario_avaliacao_ava_avaliadoTousuario  usuario @relation("avaliacao_ava_avaliadoTousuario", fields: [ava_avaliado], references: [usu_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_avaliado")
   usuario_avaliacao_ava_avaliadorTousuario usuario @relation("avaliacao_ava_avaliadorTousuario", fields: [ava_avaliador], references: [usu_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_avaliador")
-  grupo                                    grupo   @relation(fields: [ava_grupo], references: [gru_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_grupo")
+  grupo                                    grupo?  @relation(fields: [gru_id], references: [gru_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_avaliacao_grupo")
 }
 
 model item {
@@ -157,7 +156,7 @@ model item {
 
 model item_usuario {
   ite_id  Int
-  usu_id  Int
+  usu_id  BigInt
   item    item    @relation(fields: [ite_id], references: [ite_id], onDelete: Cascade, onUpdate: NoAction)
   usuario usuario @relation(fields: [usu_id], references: [usu_id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -166,20 +165,14 @@ model item_usuario {
 
 model notificacao {
   not_notificacao_id       Int      @id @default(autoincrement())
-  not_user_id              Int
+  not_user_id              BigInt
   not_notificacao_tipo     String   @db.VarChar(50)
   not_notificacao_titulo   String   @db.VarChar(255)
   not_notificacao_mensagem String
   not_notificacao_lida     Boolean  @default(false)
   not_notificacao_data     DateTime @default(now()) @db.Timestamp(6)
-  usu_id                   Int?
+  usu_id                   BigInt?
   usuario                  usuario  @relation(fields: [not_user_id], references: [usu_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notificacao_usuario")
-}
-
-model streaming {
-  cat_id           Int       @id(map: "stream_pkey")
-  str_dtvencimento DateTime  @db.Date
-  categoria        categoria @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction, map: "stream_cat_id_fkey")
 }
 
 enum tipo_divisao {
