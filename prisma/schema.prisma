@@ -96,9 +96,9 @@ model stream {
   cat_id           Int?
   gru_id           Int        @unique
   str_valor        Decimal    @db.Decimal(10, 2)
-  str_plano        String     @db.VarChar(100)
-  str_telas        Int
-  str_dtvencimento DateTime   @db.Date
+  str_plano        String?    @db.VarChar(100)
+  str_telas        Int?
+  str_dtvencimento DateTime?  @db.Date
   categoria        categoria? @relation(fields: [cat_id], references: [cat_id])
   grupo            grupo      @relation(fields: [gru_id], references: [gru_id], onDelete: Cascade)
 
@@ -108,8 +108,8 @@ model stream {
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model viagem {
   cat_id          Int
-  via_partida     String    @db.VarChar(50)
-  via_destino     String    @db.VarChar(50)
+  via_partida     String    @db.VarChar(255)
+  via_destino     String    @db.VarChar(255)
   via_data_inicio DateTime  @db.Date
   via_data_fim    DateTime  @db.Date
   gru_id          Int       @id
