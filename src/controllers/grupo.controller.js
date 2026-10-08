@@ -168,6 +168,11 @@ async function listarGrupos(req, res) {
         stream: true,
         criador: { select: { usu_id: true, usu_nome: true } },
         item: { select: { ite_valor: true } },
+        participacoes: {
+          include: {
+            usuario: { select: { usu_id: true, usu_nome: true } },
+          },
+        },
         _count: { select: { participacoes: true } },
       },
       orderBy: { gru_id: "asc" },
