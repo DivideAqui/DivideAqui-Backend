@@ -157,6 +157,24 @@ const ferramentas = {
       required: [],
     },
   },
+  sugerirNavegacao: {
+    name: "sugerirNavegacao",
+    description: "Sugere uma página para o usuário navegar. Use quando o usuário quiser ir para uma página específica ou quando fizer sentido oferecer um atalho.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description: "O path da rota válida (ex: /divisoes, /CriarDivisao, /meusgrupos)",
+        },
+        label: {
+          type: "string",
+          description: "Texto amigável do botão (ex: 'Ir para Divisões', 'Criar nova divisão')",
+        },
+      },
+      required: ["path", "label"],
+    },
+  },
 };
 
 async function enviarMensagem(req, res) {
@@ -214,13 +232,21 @@ ROTAS DISPONÍVEIS NO SISTEMA:
 - /historico - Histórico de atividades
 
 NAVEGAÇÃO:
-Quando o usuário perguntar como fazer algo, responda explicando e ofereça navegação.
-
-Ao final de respostas sobre navegação, você PODE incluir um objeto JSON assim (opcional):
-{"navigate": {"path": "/CriarDivisao", "label": "Ir para Criar divisão"}}
+Quando o usuário quiser ir para uma página (ex: "me leva para divisões", "quero criar uma divisão"):
+1. Diga uma frase curta de confirmação (ex: "Claro! Vamos lá 👇")
+2. Use a função 'sugerirNavegacao' passando o path e um label
+- NUNCA escreva JSON na resposta
+- NUNCA escreva paths crus no texto
+- A label deve ser amigável (ex: "Ir para Divisões", "Criar nova divisão")
 
 FUNÇÕES DISPONÍVEIS:
-Você pode usar funções quando o usuário perguntar sobre seus dados (divisões, perfil, etc)
+- buscarDivisoesUsuario() - para saber quantas divisões o usuário tem
+- buscarInfoUsuario() - para saber o nome/email do usuário
+- buscarCategorias() - para listar categorias disponíveis
+- sugerirNavegacao(path, label) - para oferecer navegação ao usuário
+
+IMPORTANTE:
+- Use funções quando o usuário perguntar sobre seus dados (divisões, perfil, etc)
 - Nunca exponha IDs ou dados sensíveis
 - Se uma função falhar, diga de forma natural que não conseguiu buscar`;
 
@@ -265,19 +291,31 @@ Você pode usar funções quando o usuário perguntar sobre seus dados (divisõe
       if (response.functionCalls && response.functionCalls.length > 0) {
         const functionCall = response.functionCalls[0];
         let funcaoResultado = null;
+        let navigateDetectado = null;
 
-        switch (functionCall.name) {
-          case "buscarDivisoesUsuario":
-            funcaoResultado = await buscarDivisoesUsuario(usuarioId);
-            break;
-          case "buscarInfoUsuario":
-            funcaoResultado = await buscarInfoUsuario(usuarioId);
-            break;
-          case "buscarCategorias":
-            funcaoResultado = await buscarCategorias();
-            break;
-          default:
-            funcaoResultado = { erro: "Função não reconhecida." };
+        if (functionCall.name === "sugerirNavegacao") {
+          const pathArg = functionCall.args?.path;
+          const labelArg = functionCall.args?.label || "Ir para " + pathArg;
+          if (pathArg && ROTAS_VALIDAS.includes(pathArg)) {
+            navigateDetectado = { path: pathArg, label: labelArg };
+            funcaoResultado = { sucesso: true };
+          } else {
+            funcaoResultado = { erro: "Rota inválida" };
+          }
+        } else {
+          switch (functionCall.name) {
+            case "buscarDivisoesUsuario":
+              funcaoResultado = await buscarDivisoesUsuario(usuarioId);
+              break;
+            case "buscarInfoUsuario":
+              funcaoResultado = await buscarInfoUsuario(usuarioId);
+              break;
+            case "buscarCategorias":
+              funcaoResultado = await buscarCategorias();
+              break;
+            default:
+              funcaoResultado = { erro: "Função não reconhecida." };
+          }
         }
 
         const followUp = await model.generateContent({
@@ -295,6 +333,12 @@ Você pode usar funções quando o usuário perguntar sobre seus dados (divisõe
         });
 
         geminiResponse = followUp.response.text();
+        if (navigateDetectado) {
+          return res.status(200).json({
+            reply: geminiResponse,
+            navigate: navigateDetectado,
+          });
+        }
       } else {
         geminiResponse = response.text();
       }
