@@ -238,7 +238,7 @@ Você pode usar funções quando o usuário perguntar sobre seus dados (divisõe
       }
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+      const modelName = process.env.GEMINI_MODEL || "gemini-3.8-flash";
       const model = genAI.getGenerativeModel({
         model: modelName,
         systemInstruction: instrucaoSistema,
