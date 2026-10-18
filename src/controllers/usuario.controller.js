@@ -152,7 +152,11 @@ async function loginUsuario(req, res) {
   }
   const condicoes = [];
   if (email) condicoes.push({ usu_email: email });
-  if (cpf) condicoes.push({ usu_cpf: cpf });
+  if (cpf) {
+    const limpo = String(cpf).replace(/\D/g, "");
+    const formatado = limpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    condicoes.push({ usu_cpf: limpo }, { usu_cpf: formatado });
+  }
 
   const userExistente = await prisma.usuario.findFirst({
     where: {

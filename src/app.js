@@ -8,6 +8,7 @@ const routes = require("./routes/usuario.routes");
 const grupoRoutes = require("./routes/grupo.routes");
 const avaliacaoRoutes = require("./routes/avaliacao.routes");
 const chatRoutes = require("./routes/chat.routes");
+const authRoutes = require("./routes/Auth.routes");
 
 const app = express();
 app.use(express.static("public"));
@@ -17,5 +18,6 @@ app.use("/", routes);
 app.use("/", grupoRoutes);
 app.use("/", avaliacaoRoutes);
 app.use("/", chatRoutes);
+app.use("/", authRoutes);
 
 module.exports = app;
