@@ -168,6 +168,7 @@ async function loginUsuario(req, res) {
 
   if (email) condicoes.push({ usu_email: email });
 
+
   if (cpf) {
     const limpo = String(cpf).replace(/\D/g, "");
     const formatado = limpo.replace(
