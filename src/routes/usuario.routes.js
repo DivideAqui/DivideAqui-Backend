@@ -25,5 +25,5 @@ router.get("/perfil", autenticar, (req, res)=>{
 
 
 //patch
-router.patch("/usuarioatualizar/:id", atualizarUsu)
+router.patch("/usuarioatualizar/:id", autenticar, atualizarUsu)
 module.exports = router;

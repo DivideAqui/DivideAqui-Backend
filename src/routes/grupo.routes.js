@@ -2,9 +2,12 @@ const express = require("express");
 const router = express.Router();
 const path = require("path");
 
+const autenticar = require("../middlewares/autenticar");
+
 const {
   criarGrupo,
   listarGrupos,
+  listarMinhasDivisoes,
   buscarPorId,
   buscarPorCategoriaNome,
   buscarPorQuantidade,
@@ -25,6 +28,7 @@ router.get("/grupos/busca/quantidade/:num", buscarPorQuantidade);
 // CRUD
 router.post("/grupos", criarGrupo);
 router.get("/grupos", listarGrupos);
+router.get("/grupos/minhas-divisoes", autenticar, listarMinhasDivisoes);
 router.get("/grupos/:id", buscarPorId);
 router.put("/grupos/:id", atualizarGrupo);
 router.delete("/grupos/:id", deletarGrupo);

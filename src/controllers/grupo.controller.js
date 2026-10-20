@@ -187,6 +187,13 @@ async function listarGrupos(req, res) {
 async function buscarPorId(req, res) {
   try {
     const { id } = req.params;
+
+    if (!id || !/^\d+$/.test(id)) {
+  return res.status(400).json({
+    erro: "ID do grupo inválido ou ausente.",
+  });
+}
+
     const grupo = await prisma.grupo.findUnique({
       where: { gru_id: parseInt(id) },
      include: {
@@ -293,9 +300,87 @@ async function deletarGrupo(req, res) {
   }
 }
 
+
+
+
+async function listarMinhasDivisoes(req, res) {
+  try {
+
+    console.log("Usuário autenticado:", req.usuario);
+
+    const usuarioId = req.usuario?.id ?? req.usuario?.sub;
+
+    console.log("ID utilizado:", usuarioId);
+
+    // restante do código...
+   // const usuarioId = req.usuario.id ?? req.usuario.sub;
+
+    if (!usuarioId || !/^\d+$/.test(String(usuarioId))) {
+      return res.status(401).json({
+        erro: "ID do usuário autenticado inválido.",
+      });
+    }
+
+    const grupos = await prisma.grupo.findMany({
+      where: {
+        participacoes: {
+          some: {
+            usu_id: BigInt(usuarioId),
+          },
+        },
+      },
+      include: {
+        mensalidade: true,
+        categoria: true,
+        stream: true,
+        criador: {
+          select: {
+            usu_id: true,
+            usu_nome: true,
+          },
+        },
+        item: {
+          select: {
+            ite_valor: true,
+          },
+        },
+        participacoes: {
+          include: {
+            usuario: {
+              select: {
+                usu_id: true,
+                usu_nome: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            participacoes: true,
+          },
+        },
+      },
+      orderBy: {
+        gru_id: "asc",
+      },
+    });
+
+    return res.status(200).json(formatResult(grupos));
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      erro: "Erro interno ao buscar suas divisões.",
+      detalhes: error.message,
+    });
+  }
+}
+
+
 module.exports = {
   criarGrupo,
   listarGrupos,
+  listarMinhasDivisoes,
   buscarPorId,
   buscarPorCategoriaNome,
   buscarPorQuantidade,
