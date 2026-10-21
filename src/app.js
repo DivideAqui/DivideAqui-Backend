@@ -11,6 +11,7 @@ const avaliacaoRoutes = require("./routes/avaliacao.routes");
 const chatRoutes = require("./routes/chat.routes");
 const authRoutes = require("./routes/Auth.routes");
 const historicoRoutes = require("./routes/historico.routes");
+const notificacaoRoutes = require("./routes/notificacao.routes");
 
 const app = express();
 app.use(express.static("public"));
@@ -21,6 +22,7 @@ app.use("/", grupoRoutes);
 app.use("/", avaliacaoRoutes);
 app.use("/", chatRoutes);
 app.use("/", authRoutes);
+app.use("/", notificacaoRoutes);
 app.use("/historico", historicoRoutes);
 
 module.exports = app;

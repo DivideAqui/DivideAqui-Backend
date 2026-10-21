@@ -1,5 +1,9 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
+const {
+  criarNotificacaoBoasVindas,
+  criarNotificacaoPerfilIncompleto,
+} = require("../services/notificacao.service.js");
 
 const router = express.Router();
 const prisma = new PrismaClient(); 
@@ -32,6 +36,11 @@ router.post("/auth/google", async (req, res) => {
         usu_foto: p.picture,
       },
     });
+
+    await Promise.all([
+      criarNotificacaoBoasVindas(u.usu_id),
+      criarNotificacaoPerfilIncompleto(u),
+    ]);
 
     res.json({
       id: String(u.usu_id),

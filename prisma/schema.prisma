@@ -65,8 +65,9 @@ model grupo {
   categoria        categoria    @relation(fields: [cat_id], references: [cat_id], onDelete: NoAction, onUpdate: NoAction)
   item             item[]
   participacoes    participar[]
-  stream           stream?
+  stream           stream[]
   viagem           viagem?
+  notificacoes     notificacao[]
 
   @@map("grupo")
 }
@@ -169,10 +170,19 @@ model notificacao {
   not_notificacao_tipo     String   @db.VarChar(50)
   not_notificacao_titulo   String   @db.VarChar(255)
   not_notificacao_mensagem String
+  not_notificacao_destaques Json?
+  not_notificacao_icone    String?  @db.VarChar(50)
+  not_notificacao_cor      String?  @db.VarChar(20)
+  not_gru_id               Int?
   not_notificacao_lida     Boolean  @default(false)
   not_notificacao_data     DateTime @default(now()) @db.Timestamp(6)
   usu_id                   BigInt?
   usuario                  usuario  @relation(fields: [not_user_id], references: [usu_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notificacao_usuario")
+  grupo                    grupo?   @relation(fields: [not_gru_id], references: [gru_id], onDelete: SetNull, onUpdate: NoAction, map: "fk_notificacao_grupo")
+
+  @@index([not_user_id, not_notificacao_data(sort: Desc)])
+  @@index([not_user_id, not_notificacao_lida])
+  @@map("notificacao")
 }
 
 enum tipo_divisao {

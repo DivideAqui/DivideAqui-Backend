@@ -1,5 +1,6 @@
 const prisma = require("../libs/prisma.js");
 const { Prisma } = require("@prisma/client");
+const { criarNotificacao } = require("../services/notificacao.service.js");
 
 function formatResult(result) {
   return JSON.parse(
@@ -152,6 +153,17 @@ async function criarGrupo(req, res) {
 
       return grupo;
     });
+
+    if (creatorId !== null) {
+      await criarNotificacao({
+        usu_id: creatorId,
+        tipo: "DIVISAO_CRIADA",
+        mensagem: `Sua divisão "${novo.gru_nome}" foi criada com sucesso. Convide seus amigos para começar a dividir.`,
+        destaques: [novo.gru_nome],
+        gru_id: novo.gru_id,
+      });
+    }
+
     return res.status(201).json(formatResult(novo));
   } catch (error) {
     console.error(error);

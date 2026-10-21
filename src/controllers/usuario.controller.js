@@ -1,6 +1,10 @@
 const bcrypt = require("bcrypt");
 const prisma = require("../libs/prisma.js");
 const jwt = require("jsonwebtoken");
+const {
+  criarNotificacaoBoasVindas,
+  criarNotificacaoPerfilIncompleto,
+} = require("../services/notificacao.service.js");
 
 function converterDataBR(dataBR) {
   if (!dataBR || !dataBR.includes("/")) {
@@ -214,6 +218,11 @@ async function loginUsuario(req, res) {
     process.env.JWT_SECRET,
     { expiresIn: "7d" },
   );
+
+  await Promise.all([
+    criarNotificacaoBoasVindas(userExistente.usu_id),
+    criarNotificacaoPerfilIncompleto(userExistente),
+  ]);
 
   return res.status(200).json({ token });
 }
