@@ -14,6 +14,7 @@ const {
   procurarPorNomeGeral,
   atualizarGrupo,
   deletarGrupo,
+  participarGrupo,
 } = require("../controllers/grupo.controller.js");
 
 
@@ -29,6 +30,7 @@ router.get("/grupos/busca/quantidade/:num", buscarPorQuantidade);
 router.post("/grupos", criarGrupo);
 router.get("/grupos", listarGrupos);
 router.get("/grupos/minhas-divisoes", autenticar, listarMinhasDivisoes);
+router.post("/grupos/:id/participar", autenticar, participarGrupo);
 router.get("/grupos/:id", buscarPorId);
 router.put("/grupos/:id", atualizarGrupo);
 router.delete("/grupos/:id", deletarGrupo);

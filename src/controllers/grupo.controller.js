@@ -312,8 +312,106 @@ async function deletarGrupo(req, res) {
   }
 }
 
+async function participarGrupo(req, res) {
+  try {
+    const { id } = req.params;
+    const grupoId = parseInt(id);
 
+    if (isNaN(grupoId) || grupoId < 1) {
+      return res.status(400).json({ erro: "ID do grupo inválido." });
+    }
 
+    const usuarioId = req.usuario?.id ?? req.usuario?.sub;
+
+    if (!usuarioId || !/^\d+$/.test(String(usuarioId))) {
+      return res.status(401).json({ erro: "Usuário não autenticado." });
+    }
+
+    const userId = BigInt(usuarioId);
+
+    // Buscar o grupo com suas informações
+    const grupo = await prisma.grupo.findUnique({
+      where: { gru_id: grupoId },
+      include: {
+        stream: true,
+        participacoes: {
+          select: { usu_id: true }
+        },
+        criador: {
+          select: { usu_id: true, usu_nome: true }
+        }
+      }
+    });
+
+    if (!grupo) {
+      return res.status(404).json({ erro: "Grupo não encontrado." });
+    }
+
+    // Verificar se o usuário já está no grupo
+    const jaParticipa = grupo.participacoes.some(p => BigInt(p.usu_id) === userId);
+    if (jaParticipa) {
+      return res.status(400).json({ erro: "Você já participa deste grupo." });
+    }
+
+    // Verificar se o grupo é privado
+    if (grupo.gru_visibilidade === false) {
+      return res.status(403).json({ erro: "Este grupo é privado. Solicite participação ao líder." });
+    }
+
+    // Calcular vagas disponíveis
+    const participationCount = grupo.participacoes.length;
+    const creatorIsParticipant = grupo.gru_criador_id != null;
+    const memberCount = Math.max(1, participationCount + (creatorIsParticipant ? 0 : 1));
+    const configuredCapacity = Math.max(memberCount, grupo.gru_num_part ?? grupo.gru_num_vagas ?? memberCount);
+    const maxParticipants = grupo.stream?.[0]?.str_telas == null
+      ? configuredCapacity
+      : Math.min(configuredCapacity, grupo.stream[0].str_telas);
+    const currentMembers = memberCount;
+    const slots = Math.max(0, maxParticipants - currentMembers);
+
+    // Verificar se há vagas
+    if (slots <= 0) {
+      return res.status(400).json({ erro: "Este grupo não possui vagas disponíveis." });
+    }
+
+    // Adicionar o usuário ao grupo
+    await prisma.participar.create({
+      data: {
+        usu_id: userId,
+        gru_id: grupoId
+      }
+    });
+
+    // Buscar nome do usuário que entrou
+    const usuario = await prisma.usuario.findUnique({
+      where: { usu_id: userId },
+      select: { usu_nome: true }
+    });
+
+    // Notificar o criador do grupo
+    if (grupo.gru_criador_id && BigInt(grupo.gru_criador_id) !== userId) {
+      await criarNotificacao({
+        usu_id: Number(grupo.gru_criador_id),
+        tipo: "NOVO_PARTICIPANTE",
+        mensagem: `${usuario?.usu_nome || 'Um novo usuário'} entrou no seu grupo "${grupo.gru_nome}".`,
+        destaques: [grupo.gru_nome, usuario?.usu_nome || ''],
+        gru_id: grupoId
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: "Você entrou no grupo com sucesso!",
+      grupo: {
+        gru_id: grupo.gru_id,
+        gru_nome: grupo.gru_nome
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ erro: "Erro interno.", detalhes: error.message });
+  }
+}
 
 async function listarMinhasDivisoes(req, res) {
   try {
@@ -401,4 +499,5 @@ module.exports = {
   procurarPorNomeGeral,
   atualizarGrupo,
   deletarGrupo,
+  participarGrupo,
 };
