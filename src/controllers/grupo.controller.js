@@ -178,11 +178,11 @@ async function listarGrupos(req, res) {
         mensalidade: true,
         categoria: true,
         stream: true,
-        criador: { select: { usu_id: true, usu_nome: true } },
+        criador: { select: { usu_id: true, usu_nome: true, usu_foto: true } },
         item: { select: { ite_valor: true } },
         participacoes: {
           include: {
-            usuario: { select: { usu_id: true, usu_nome: true } },
+            usuario: { select: { usu_id: true, usu_nome: true, usu_foto: true } },
           },
         },
         _count: { select: { participacoes: true } },
@@ -212,11 +212,11 @@ async function buscarPorId(req, res) {
     categoria: true,
     mensalidade: true,
     stream: true,
-    criador: { select: { usu_id: true, usu_nome: true } },
+    criador: { select: { usu_id: true, usu_nome: true, usu_foto: true } },
     item: { select: { ite_valor: true } },
     participacoes: {
       include: {
-        usuario: { select: { usu_id: true, usu_nome: true } },
+        usuario: { select: { usu_id: true, usu_nome: true, usu_foto: true } },
       },
     },
     _count: { select: { participacoes: true } },
@@ -236,7 +236,7 @@ async function buscarPorCategoriaNome(req, res) {
     if (!nome) return res.status(400).json({ erro: "Parametro 'nome' é obrigatório." });
     const grupos = await prisma.grupo.findMany({
       where: { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
-      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true, usu_foto: true } }, item: { select: { ite_valor: true } }, participacoes: { include: { usuario: { select: { usu_id: true, usu_nome: true, usu_foto: true } } } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -252,7 +252,7 @@ async function buscarPorQuantidade(req, res) {
     if (Number.isNaN(parsed)) return res.status(400).json({ erro: "Número inválido." });
     const grupos = await prisma.grupo.findMany({
       where: { gru_num_part: parsed },
-      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true, usu_foto: true } }, item: { select: { ite_valor: true } }, participacoes: { include: { usuario: { select: { usu_id: true, usu_nome: true, usu_foto: true } } } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -271,7 +271,7 @@ async function procurarPorNomeGeral(req, res) {
           { categoria: { cat_nome: { contains: nome, mode: "insensitive" } } },
         ],
       },
-      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true } }, item: { select: { ite_valor: true } }, _count: { select: { participacoes: true } } },
+      include: { categoria: true, mensalidade: true, criador: { select: { usu_id: true, usu_nome: true, usu_foto: true } }, item: { select: { ite_valor: true } }, participacoes: { include: { usuario: { select: { usu_id: true, usu_nome: true, usu_foto: true } } } }, _count: { select: { participacoes: true } } },
     });
     return res.status(200).json(formatResult(await anexarDetalhesLegados(grupos)));
   } catch (error) {
@@ -349,6 +349,7 @@ async function listarMinhasDivisoes(req, res) {
           select: {
             usu_id: true,
             usu_nome: true,
+            usu_foto: true,
           },
         },
         item: {
@@ -362,6 +363,7 @@ async function listarMinhasDivisoes(req, res) {
               select: {
                 usu_id: true,
                 usu_nome: true,
+                usu_foto: true,
               },
             },
           },
